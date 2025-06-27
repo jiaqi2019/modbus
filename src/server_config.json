@@ -1,0 +1,25 @@
+{
+    "server": {
+        "host": "0.0.0.0",
+        "port": 5000,
+        "debug": false,
+        "max_connections": 100
+    },
+    "database": {
+        "path": "motor_data.db",
+        "backup_enabled": true,
+        "backup_interval_hours": 24,
+        "cleanup_enabled": true,
+        "cleanup_days": 90
+    },
+    "security": {
+        "enable_auth": false,
+        "api_key": "",
+        "allowed_ips": []
+    },
+    "logging": {
+        "level": "INFO",
+        "file": "server.log",
+        "max_size_mb": 10
+    }
+} 

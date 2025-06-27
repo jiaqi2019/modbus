@@ -1,22 +1,35 @@
 import logging
 from pymodbus.client import ModbusTcpClient
 from datetime import datetime
-import threading
 import sys
 import importlib
 import os
 import json
+import threading
+import time
+import asyncio
+import websockets
+from db.database import DatabaseManager
+
+# 添加上级目录到Python路径
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 def load_config():
     """加载配置文件"""
-    config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config.json')
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
-        return config['modbus']['host'], config['modbus']['port'], config['modbus']['motor_count']
+        return (
+            config['modbus']['host'],
+            config['modbus']['port'],
+            config['modbus']['motor_count'],
+            bool(config['auto_update']['enabled']),  # 将数字转换为布尔值
+            config['auto_update']['interval']
+        )
     except Exception as e:
         print(f"读取配置文件失败: {str(e)}")
-        return "localhost", 5020, 12  # 默认值
+        return "localhost", 5020, 12, False, 1  # 默认值
 
 # Configure logging
 logging.basicConfig(
@@ -30,22 +43,23 @@ logger = logging.getLogger(__name__)
 class MotorData:
     def __init__(self, motor_id):
         self.motor_id = motor_id
-        self.phase_a_current = 0  # A相电流
-        self.phase_b_current = 0  # B相电流
-        self.phase_c_current = 0  # C相电流
-        self.frequency = 0        # 频率
-        self.reactive_power = 0   # 无功功率
-        self.active_power = 0     # 有功功率
-        self.line_voltage = 0     # AB相线电压
-        self.excitation_voltage = 0  # 励磁电压
-        self.excitation_current = 0  # 励磁电流
+        self.phase_a_current = 0.0
+        self.phase_b_current = 0.0
+        self.phase_c_current = 0.0
+        self.frequency = 0.0
+        self.reactive_power = 0.0
+        self.active_power = 0.0
+        self.line_voltage = 0.0
+        self.excitation_voltage = 0.0
+        self.excitation_current = 0.0
+        self.calculated_excitation_current = 0.0
+        self.excitation_current_ratio = 0.0
         self.last_update = None
-        self.calculated_excitation_current = 0  # 计算得到的励磁电流
-        self.excitation_current_ratio = 0  # 励磁电流比值
 
     def calculate_excitation(self, calc_module):
         # 准备计算所需的数据
-        genmon = [            0,  # 未使用
+        genmon = [
+            0,  # 未使用
             0,  # 未使用
             0,  # 未使用
             0,  # 未使用
@@ -57,15 +71,12 @@ class MotorData:
             self.excitation_current  # 实际励磁电流
         ]
         
-        logger.info(f"电机 {genmon} 计算开始:")
-        # 计算励磁电流和比值
+        # 调用计算模块
         self.calculated_excitation_current, self.excitation_current_ratio = calc_module.calculate(genmon)
-        logger.info(f"电机 {self.motor_id} 计算完成:")
-        logger.info(f"计算得到的励磁电流: {self.calculated_excitation_current:.2f}")
-        logger.info(f"励磁电流比值: {self.excitation_current_ratio*100:.2f}%")
 
     def to_dict(self):
         return {
+            'motor_id': self.motor_id,
             'phase_a_current': self.phase_a_current,
             'phase_b_current': self.phase_b_current,
             'phase_c_current': self.phase_c_current,
@@ -75,6 +86,8 @@ class MotorData:
             'line_voltage': self.line_voltage,
             'excitation_voltage': self.excitation_voltage,
             'excitation_current': self.excitation_current,
+            'calculated_excitation_current': self.calculated_excitation_current,
+            'excitation_current_ratio': self.excitation_current_ratio,
             'last_update': self.last_update
         }
 
@@ -97,12 +110,20 @@ class ModbusClient:
         logger.info("初始化 Modbus 客户端...")
         # 如果没有提供host和port，从配置文件读取
         if host is None or port is None or motor_count is None:
-            host, port, motor_count = load_config()
+            host, port, motor_count, _, _ = load_config()
             
         # 初始化指定数量的电机数据
         self.motor_count = motor_count
         self.motors = [MotorData(i+1) for i in range(motor_count)]
         self.client = ModbusTcpClient(host, port)
+        
+        # 初始化数据库管理器
+        self.db_manager = DatabaseManager()
+        
+        # WebSocket服务器相关
+        self.websocket_server = None
+        self.websocket_clients = set()
+        self.websocket_running = False
         
         # 创建电机数据日志目录
         self.data_log_dir = "motor_data_logs"
@@ -171,7 +192,13 @@ class ModbusClient:
             logger.info(f"收到数据: {' '.join([f'{x:04X}' for x in data])}")
             
             # 解析数据
-            return self.parse_motor_data(data)
+            success = self.parse_motor_data(data)
+            if success:
+                # 保存到数据库
+                self.save_to_database()
+                # 推送数据到WebSocket客户端
+                self.broadcast_to_websocket_clients()
+            return success
         except Exception as e:
             logger.error(f"请求数据时出错: {str(e)}")
             return False
@@ -188,14 +215,9 @@ class ModbusClient:
                 logger.info(f"开始解析电机{i+1}数据...")
                 
                 # 处理电流数据：如果小于10则乘以1000
-                phase_a_raw = self.to_float16(data[start_idx])
-                motor.phase_a_current = phase_a_raw * 1000 if phase_a_raw < 10 else phase_a_raw
-                
-                phase_b_raw = self.to_float16(data[start_idx + 1])
-                motor.phase_b_current = phase_b_raw * 1000 if phase_b_raw < 10 else phase_b_raw
-                
-                phase_c_raw = self.to_float16(data[start_idx + 2])
-                motor.phase_c_current = phase_c_raw * 1000 if phase_c_raw < 10 else phase_c_raw
+                motor.phase_a_current = self.to_float16(data[start_idx])
+                motor.phase_b_current = self.to_float16(data[start_idx + 1])
+                motor.phase_c_current = self.to_float16(data[start_idx + 2])
                 
                 motor.frequency = self.to_float16(data[start_idx + 3])
                 motor.reactive_power = self.to_float16(data[start_idx + 4])
@@ -210,7 +232,7 @@ class ModbusClient:
                 motor.last_update = datetime.now()
                 
                 # 根据电机编号选择对应的计算模块
-                module_name = f"calc_{(i//2)*2+1}_{(i//2)*2+2}"
+                module_name = f"calc.calc_{(i//2)*2+1}_{(i//2)*2+2}"
                 calc_module = importlib.import_module(module_name)
                 # 计算励磁电流
                 motor.calculate_excitation(calc_module)
@@ -229,6 +251,73 @@ class ModbusClient:
         except Exception as error:
             logger.error(f"数据解析错误: {str(error)}")
             return False
+
+    def save_to_database(self):
+        """保存数据到数据库"""
+        try:
+            self.db_manager.save_all_motors_data(self.motors)
+            logger.info("数据已保存到数据库")
+        except Exception as e:
+            logger.error(f"保存数据到数据库失败: {str(e)}")
+
+    def broadcast_to_websocket_clients(self):
+        """向WebSocket客户端广播数据"""
+        if not self.websocket_clients:
+            return
+            
+        # 准备数据
+        data = {
+            'type': 'motor_update',
+            'timestamp': datetime.now().isoformat(),
+            'motors': [motor.to_dict() for motor in self.motors]
+        }
+        
+        # 广播给所有连接的客户端
+        message = json.dumps(data, ensure_ascii=False)
+        for client in self.websocket_clients.copy():
+            try:
+                asyncio.run(client.send(message))
+            except Exception as e:
+                logger.error(f"向WebSocket客户端发送数据失败: {str(e)}")
+                self.websocket_clients.discard(client)
+
+    def get_motors_data(self):
+        """获取电机数据（供UI使用）"""
+        return self.motors
+
+    def request_data(self):
+        """请求数据（UI接口兼容方法）"""
+        return self.request_motor_data()
+
+    def start_websocket_server(self, host='0.0.0.0', port=8765):
+        """启动WebSocket服务器"""
+        self.websocket_running = True
+        self.websocket_server = asyncio.run(self._run_websocket_server(host, port))
+
+    async def _run_websocket_server(self, host, port):
+        """运行WebSocket服务器"""
+        async def handle_client(websocket, path):
+            self.websocket_clients.add(websocket)
+            logger.info(f"WebSocket客户端连接，当前连接数: {len(self.websocket_clients)}")
+            
+            try:
+                async for message in websocket:
+                    # 处理客户端消息
+                    try:
+                        data = json.loads(message)
+                        if data.get('type') == 'ping':
+                            await websocket.send(json.dumps({'type': 'pong'}))
+                    except json.JSONDecodeError:
+                        pass
+            except websockets.exceptions.ConnectionClosed:
+                pass
+            finally:
+                self.websocket_clients.discard(websocket)
+                logger.info(f"WebSocket客户端断开，当前连接数: {len(self.websocket_clients)}")
+
+        server = await websockets.serve(handle_client, host, port)
+        logger.info(f"WebSocket服务器启动: ws://{host}:{port}")
+        await server.wait_closed()
 
     def save_data_to_log(self):
         """保存当前数据到日志文件"""

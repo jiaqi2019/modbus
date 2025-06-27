@@ -6,7 +6,6 @@
     },
     "auto_update": {
         "enabled": 1,
-        "interval": 5,
-        "start_auto_update": 1
+        "interval": 1
     }
 } 
