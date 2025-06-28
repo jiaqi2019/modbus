@@ -12,30 +12,53 @@ class DatabaseManager:
         if db_path is None:
             # 使用启动程序的目录下的motor_data.db
             # 获取启动脚本的目录
-            if hasattr(sys, '_getframe'):
-                # 获取调用栈，找到启动脚本的路径
-                frame = sys._getframe(1)
-                while frame:
-                    if frame.f_code.co_filename.endswith('main.py'):
-                        script_dir = os.path.dirname(os.path.abspath(frame.f_code.co_filename))
-                        break
-                    frame = frame.f_back
-                else:
-                    # 如果找不到main.py，使用当前工作目录
-                    script_dir = os.getcwd()
-            else:
-                # 备用方案：使用当前工作目录
-                script_dir = os.getcwd()
-            
+            script_dir = self._get_script_directory()
             self.db_path = os.path.join(script_dir, "motor_data.db")
         else:
             self.db_path = db_path
         
-        # 打印调试信息
-        print(f"数据库文件路径: {self.db_path}")
-        print(f"启动程序目录: {os.path.dirname(self.db_path)}")
-        
         self.init_database()
+    
+    def _get_script_directory(self):
+        """获取启动脚本的目录"""
+        try:
+            # 方法1: 通过sys.argv获取启动脚本路径
+            if len(sys.argv) > 0:
+                script_path = sys.argv[0]
+                if os.path.isabs(script_path):
+                    return os.path.dirname(script_path)
+                else:
+                    # 相对路径，转换为绝对路径
+                    return os.path.dirname(os.path.abspath(script_path))
+            
+            # 方法2: 通过调用栈查找run_client.py
+            if hasattr(sys, '_getframe'):
+                frame = sys._getframe(1)
+                while frame:
+                    filename = frame.f_code.co_filename
+                    if 'run_client.py' in filename or 'main.py' in filename:
+                        script_dir = os.path.dirname(os.path.abspath(filename))
+                        return script_dir
+                    frame = frame.f_back
+            
+            # 方法3: 查找当前工作目录下的run_client.py
+            cwd = os.getcwd()
+            run_client_path = os.path.join(cwd, 'run_client.py')
+            if os.path.exists(run_client_path):
+                return cwd
+            
+            # 方法4: 查找src/websocket_client/run_client.py
+            websocket_client_dir = os.path.join(cwd, 'src', 'websocket_client')
+            if os.path.exists(websocket_client_dir):
+                return websocket_client_dir
+            
+            # 备用方案：使用当前工作目录
+            logger.warning("无法确定启动脚本目录，使用当前工作目录")
+            return os.getcwd()
+            
+        except Exception as e:
+            logger.error(f"获取脚本目录失败: {str(e)}，使用当前工作目录")
+            return os.getcwd()
     
     def init_database(self):
         """初始化数据库表结构"""
