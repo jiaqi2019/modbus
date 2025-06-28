@@ -90,11 +90,15 @@ class ModbusServer:
                     
                     def generate_float_value(base, variation=0.1):
                         """生成带随机变化的浮点数"""
-                        value = base + random.uniform(-base * variation, base * variation)
-                        # 确保值在合理范围内
-                        if abs(value) > 1e6:  # 如果值太大，重置为基准值
-                            value = base
-                        return value
+                        try:
+                            value = base + random.uniform(-base * variation, base * variation)
+                            # 确保值在合理范围内
+                            if abs(value) > 1e6 or value != value:  # 检查NaN
+                                value = base
+                            return value
+                        except Exception as e:
+                            print(f"生成浮点数时出错: {str(e)}")
+                            return base
                     
                     # 生成随机数据
                     if i % 2 == 0:  # 偶数电机
@@ -138,11 +142,27 @@ class ModbusServer:
         """将浮点数转换为两个16位寄存器值"""
         try:
             # 确保值是有效的浮点数
-            if not isinstance(value, (int, float)) or abs(value) > 1e6:
+            if not isinstance(value, (int, float)):
                 value = 0.0
             
-            packed = struct.pack('!f', float(value))
-            return struct.unpack('!HH', packed)
+            # 检查是否为NaN或无穷大
+            if isinstance(value, float) and (value != value or abs(value) == float('inf')):
+                value = 0.0
+            
+            # 限制值的范围，避免溢出
+            if abs(value) > 1e6:
+                value = 0.0
+            
+            # 转换为float并打包
+            float_value = float(value)
+            packed = struct.pack('!f', float_value)
+            high, low = struct.unpack('!HH', packed)
+            
+            # 验证转换结果
+            if high == 0x7FC00000 and low == 0:  # NaN的IEEE 754表示
+                return (0, 0)
+            
+            return (high, low)
         except Exception as e:
             print(f"转换浮点数 {value} 时出错: {str(e)}")
             return (0, 0)

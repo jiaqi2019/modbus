@@ -2,13 +2,39 @@ import sqlite3
 import os
 from datetime import datetime
 import logging
+import sys
 
 logger = logging.getLogger(__name__)
 
 class DatabaseManager:
-    def __init__(self, db_path="motor_data.db"):
+    def __init__(self, db_path=None):
         """初始化数据库管理器"""
-        self.db_path = db_path
+        if db_path is None:
+            # 使用启动程序的目录下的motor_data.db
+            # 获取启动脚本的目录
+            if hasattr(sys, '_getframe'):
+                # 获取调用栈，找到启动脚本的路径
+                frame = sys._getframe(1)
+                while frame:
+                    if frame.f_code.co_filename.endswith('main.py'):
+                        script_dir = os.path.dirname(os.path.abspath(frame.f_code.co_filename))
+                        break
+                    frame = frame.f_back
+                else:
+                    # 如果找不到main.py，使用当前工作目录
+                    script_dir = os.getcwd()
+            else:
+                # 备用方案：使用当前工作目录
+                script_dir = os.getcwd()
+            
+            self.db_path = os.path.join(script_dir, "motor_data.db")
+        else:
+            self.db_path = db_path
+        
+        # 打印调试信息
+        print(f"数据库文件路径: {self.db_path}")
+        print(f"启动程序目录: {os.path.dirname(self.db_path)}")
+        
         self.init_database()
     
     def init_database(self):
@@ -136,6 +162,8 @@ class DatabaseManager:
         """获取指定电机的历史数据"""
         try:
             with sqlite3.connect(self.db_path) as conn:
+                # 设置row_factory以返回字典格式
+                conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
                 
                 cursor.execute('''
@@ -145,7 +173,9 @@ class DatabaseManager:
                     LIMIT ?
                 ''', (motor_id, limit))
                 
-                return cursor.fetchall()
+                rows = cursor.fetchall()
+                # 转换为字典列表
+                return [dict(row) for row in rows]
                 
         except Exception as e:
             logger.error(f"获取电机 {motor_id} 数据失败: {str(e)}")
@@ -155,6 +185,8 @@ class DatabaseManager:
         """获取指定电机的最新数据"""
         try:
             with sqlite3.connect(self.db_path) as conn:
+                # 设置row_factory以返回字典格式
+                conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
                 
                 cursor.execute('''
@@ -164,7 +196,10 @@ class DatabaseManager:
                     LIMIT 1
                 ''', (motor_id,))
                 
-                return cursor.fetchone()
+                row = cursor.fetchone()
+                if row:
+                    return dict(row)
+                return None
                 
         except Exception as e:
             logger.error(f"获取电机 {motor_id} 最新数据失败: {str(e)}")
@@ -174,6 +209,8 @@ class DatabaseManager:
         """获取指定时间范围内的电机数据"""
         try:
             with sqlite3.connect(self.db_path) as conn:
+                # 设置row_factory以返回字典格式
+                conn.row_factory = sqlite3.Row
                 cursor = conn.cursor()
                 
                 cursor.execute('''
@@ -182,7 +219,9 @@ class DatabaseManager:
                     ORDER BY timestamp ASC
                 ''', (motor_id, start_time.isoformat(), end_time.isoformat()))
                 
-                return cursor.fetchall()
+                rows = cursor.fetchall()
+                # 转换为字典列表
+                return [dict(row) for row in rows]
                 
         except Exception as e:
             logger.error(f"获取电机 {motor_id} 时间范围数据失败: {str(e)}")
@@ -309,4 +348,8 @@ class DatabaseManager:
         if not recommendations:
             recommendations.append("数据库状态良好，无需特殊优化")
         
-        return recommendations 
+        return recommendations
+    
+    def get_db_path(self):
+        """获取数据库文件的绝对路径"""
+        return os.path.abspath(self.db_path) 
