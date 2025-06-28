@@ -69,7 +69,7 @@ class WebSocketClient:
             logger.info("等待WebSocket线程结束...")
             # 给线程一些时间来自然结束
             self.thread.join(timeout=3.0)
-            
+        
             if self.thread.is_alive():
                 logger.warning("WebSocket线程未能在3秒内结束")
         
@@ -87,16 +87,16 @@ class WebSocketClient:
             # 确保事件循环正确关闭
             try:
                 if self.loop and not self.loop.is_closed():
-                    # 取消所有待处理的任务
-                    pending = asyncio.all_tasks(self.loop)
-                    for task in pending:
-                        task.cancel()
-                    
-                    # 等待所有任务完成
-                    if pending:
-                        self.loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-                    
-                    self.loop.close()
+                        # 取消所有待处理的任务
+                        pending = asyncio.all_tasks(self.loop)
+                        for task in pending:
+                            task.cancel()
+                        
+                        # 等待所有任务完成
+                        if pending:
+                            self.loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+                        
+                self.loop.close()
             except Exception as e:
                 logger.error(f"关闭事件循环时出错: {str(e)}")
     
@@ -118,7 +118,7 @@ class WebSocketClient:
                 # 如果连接断开且不需要重连，退出循环
                 if not self.should_reconnect:
                     break
-                    
+                
             except Exception as e:
                 logger.error(f"WebSocket连接错误: {str(e)}")
                 if self.on_error:

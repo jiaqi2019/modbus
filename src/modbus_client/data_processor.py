@@ -102,10 +102,6 @@ class DataProcessor:
         self.motors = [MotorData(i+1) for i in range(motor_count)]
         # logger.info(f"数据处理器初始化完成，支持 {motor_count} 台电机")
     
-    def to_signed_int(self, value):
-        """将16位寄存器值转换为有符号整数"""
-        return value - 65536 if value > 32767 else value
-    
     def to_float(self, high, low):
         """将两个16位寄存器转换为32位浮点数"""
         # 将两个16位值组合成32位值
@@ -113,18 +109,6 @@ class DataProcessor:
         # 使用struct模块将32位值转换为浮点数，并保留4位小数
         return round(struct.unpack('!f', struct.pack('!I', combined))[0], 4)
     
-    def to_float16(self, value):
-        """将16位寄存器值转换为浮点数"""
-        try:
-            # 处理负数（16位有符号整数）
-            if value > 32767:
-                value = value - 65536
-            
-            # 转换为浮点数
-            return float(value)
-        except Exception as e:
-            logger.error(f"转换寄存器值 {value} 失败: {str(e)}")
-            return 0.0
     
     def parse_motor_data(self, data):
         """解析电机数据，使用1.py中的逻辑"""
@@ -161,11 +145,7 @@ class DataProcessor:
                         # 计算励磁电流
                         motor.calculate_excitation(calc_module)
                     except ImportError as e:
-                        # 尝试直接导入
-                        try:
-                            import calc.calc_1_2 as test_module
-                        except Exception as test_e:
-                            logger.error(f"测试导入失败: {str(test_e)}")
+                        logger.error(f"导入计算模块 {module_name} 失败: {str(e)}")
                     except Exception as e:
                         logger.error(f"计算电机{i+1}励磁电流失败: {str(e)}")
                         import traceback
@@ -212,14 +192,3 @@ class DataProcessor:
             logger.error(f"处理电机数据失败: {str(e)}")
             return []
     
-    def get_motor_data(self, motor_id: int) -> MotorData:
-        """获取指定电机的数据"""
-        if 1 <= motor_id <= self.motor_count:
-            return self.motors[motor_id - 1]
-        else:
-            logger.warning(f"无效的电机ID: {motor_id}")
-            return None
-    
-    def get_all_motor_data(self) -> List[MotorData]:
-        """获取所有电机数据"""
-        return self.motors.copy() 

@@ -10,6 +10,8 @@ from scipy.interpolate import make_interp_spline
 from db.database import DatabaseManager
 import logging
 import matplotlib
+import sys
+import os
 
 matplotlib.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'Arial Unicode MS']
 matplotlib.rcParams['axes.unicode_minus'] = False
@@ -22,7 +24,11 @@ class MotorChartDisplay:
     def __init__(self, parent, motor_id):
         self.parent = parent
         self.motor_id = motor_id
-        self.db_manager = DatabaseManager()
+        
+        # 使用脚本目录初始化数据库
+        script_dir = self._get_script_directory()
+        db_path = os.path.join(script_dir, "motor_data.db")
+        self.db_manager = DatabaseManager(db_path)
         
         # 图表相关
         self.chart = None
@@ -36,6 +42,53 @@ class MotorChartDisplay:
         
         # 初始化图表数据
         self.load_chart_data()
+    
+    def _get_script_directory(self):
+        """获取启动脚本的目录"""
+        try:
+            # 方法1: 通过sys.argv获取启动脚本路径
+            if len(sys.argv) > 0:
+                script_path = sys.argv[0]
+                if os.path.isabs(script_path):
+                    return os.path.dirname(script_path)
+                else:
+                    # 相对路径，转换为绝对路径
+                    return os.path.dirname(os.path.abspath(script_path))
+            
+            # 方法2: 通过调用栈查找启动脚本
+            if hasattr(sys, '_getframe'):
+                frame = sys._getframe(1)
+                while frame:
+                    filename = frame.f_code.co_filename
+                    if 'run_client.py' in filename or 'main.py' in filename:
+                        script_dir = os.path.dirname(os.path.abspath(filename))
+                        return script_dir
+                    frame = frame.f_back
+            
+            # 方法3: 查找当前工作目录下的启动脚本
+            cwd = os.getcwd()
+            run_client_path = os.path.join(cwd, 'run_client.py')
+            main_path = os.path.join(cwd, 'main.py')
+            if os.path.exists(run_client_path):
+                return cwd
+            if os.path.exists(main_path):
+                return cwd
+            
+            # 方法4: 查找src目录下的启动脚本
+            websocket_client_dir = os.path.join(cwd, 'src', 'websocket_client')
+            modbus_client_dir = os.path.join(cwd, 'src', 'modbus_client')
+            if os.path.exists(websocket_client_dir):
+                return websocket_client_dir
+            if os.path.exists(modbus_client_dir):
+                return modbus_client_dir
+            
+            # 备用方案：使用当前工作目录
+            logger.warning("无法确定启动脚本目录，使用当前工作目录")
+            return os.getcwd()
+            
+        except Exception as e:
+            logger.error(f"获取脚本目录失败: {str(e)}，使用当前工作目录")
+            return os.getcwd()
     
     def create_chart_display(self):
         """创建图表显示界面"""

@@ -39,7 +39,10 @@ class WebSocketClientUI:
         self.config = WebSocketConfig()
         self.websocket_client = None
         self.data_processor = DataProcessor()
-        self.db_manager = DatabaseManager()
+        
+        # 使用配置中的数据库路径
+        db_config = self.config.get_database_config()
+        self.db_manager = DatabaseManager(db_config.get("path"))
         
         # 消息队列，用于异步处理WebSocket消息
         self.message_queue = queue.Queue()

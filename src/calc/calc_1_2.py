@@ -81,7 +81,7 @@ def calculate(genmon):
         mmfofarmaturetofieldcurrent**2 - 
         2 * emffieldcurrent * mmfofarmaturetofieldcurrent * math.cos(alpha)
     )
-    # print(f"计算得到的励磁电流: {actualfieldcurrent}")
+    
     # 计算励磁电流比值
     if actualfieldcurrent > 0:
         ratio = abs((excitation_current - actualfieldcurrent) / actualfieldcurrent)

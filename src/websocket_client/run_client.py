@@ -18,8 +18,7 @@ def main():
         level=logging.INFO,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
-            logging.StreamHandler(sys.stdout),
-            logging.FileHandler('websocket_client.log', encoding='utf-8')
+            # logging.StreamHandler(sys.stdout)
         ]
     )
     

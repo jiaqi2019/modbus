@@ -162,9 +162,11 @@ class MainUI:
     def initialize_system(self):
         """初始化系统组件"""
         try:
-            # 初始化数据库
-            self.db_manager = DatabaseManager()
-            logger.info("数据库初始化完成")
+            # 初始化数据库 - 使用脚本目录
+            script_dir = self._get_script_directory()
+            db_path = os.path.join(script_dir, "motor_data.db")
+            self.db_manager = DatabaseManager(db_path)
+            logger.info(f"数据库初始化完成: {db_path}")
             
             # 初始化数据处理器
             motor_count = self.config['modbus']['motor_count']
@@ -186,6 +188,47 @@ class MainUI:
         except Exception as e:
             logger.error(f"系统初始化失败: {str(e)}")
             messagebox.showerror("初始化错误", f"系统初始化失败: {str(e)}")
+    
+    def _get_script_directory(self):
+        """获取启动脚本的目录"""
+        try:
+            # 方法1: 通过sys.argv获取启动脚本路径
+            if len(sys.argv) > 0:
+                script_path = sys.argv[0]
+                if os.path.isabs(script_path):
+                    return os.path.dirname(script_path)
+                else:
+                    # 相对路径，转换为绝对路径
+                    return os.path.dirname(os.path.abspath(script_path))
+            
+            # 方法2: 通过调用栈查找main.py
+            if hasattr(sys, '_getframe'):
+                frame = sys._getframe(1)
+                while frame:
+                    filename = frame.f_code.co_filename
+                    if 'main.py' in filename:
+                        script_dir = os.path.dirname(os.path.abspath(filename))
+                        return script_dir
+                    frame = frame.f_back
+            
+            # 方法3: 查找当前工作目录下的main.py
+            cwd = os.getcwd()
+            main_path = os.path.join(cwd, 'main.py')
+            if os.path.exists(main_path):
+                return cwd
+            
+            # 方法4: 查找src/modbus_client/main_ui.py
+            modbus_client_dir = os.path.join(cwd, 'src', 'modbus_client')
+            if os.path.exists(modbus_client_dir):
+                return modbus_client_dir
+            
+            # 备用方案：使用当前工作目录
+            logger.warning("无法确定启动脚本目录，使用当前工作目录")
+            return os.getcwd()
+            
+        except Exception as e:
+            logger.error(f"获取脚本目录失败: {str(e)}，使用当前工作目录")
+            return os.getcwd()
     
     def save_configuration(self):
         """保存配置"""
