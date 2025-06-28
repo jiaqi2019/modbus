@@ -26,12 +26,8 @@ class MotorDataDisplay:
         )
         title_label.pack(pady=(0, 5))
 
-        # 创建可滚动数据区
-        from .chart_display import MotorChartDisplay
-        scrollable_frame = MotorChartDisplay.create_data_display_scrollable(self, self.parent)
-
         # 创建数据容器 - 水平布局
-        data_container = ttk.Frame(scrollable_frame)
+        data_container = ttk.Frame(self.parent)
         data_container.pack(fill='x', expand=True)
 
         # 定义数据项 - 使用水平布局
@@ -58,11 +54,11 @@ class MotorDataDisplay:
                     self._create_data_item_horizontal(row_frame, item)
 
         # 创建分隔线
-        separator = ttk.Separator(scrollable_frame, orient='horizontal')
+        separator = ttk.Separator(self.parent, orient='horizontal')
         separator.pack(fill='x', pady=5)
 
         # 故障判断值 - 使用更醒目的样式
-        ratio_frame = ttk.Frame(scrollable_frame)
+        ratio_frame = ttk.Frame(self.parent)
         ratio_frame.pack(fill='x', pady=2)
         ratio_title = ttk.Label(
             ratio_frame,
@@ -82,7 +78,7 @@ class MotorDataDisplay:
 
         # 警告信息
         self.warning_label = ttk.Label(
-            scrollable_frame,
+            self.parent,
             text="",
             font=('Microsoft YaHei', 9, 'bold'),
             foreground='red',
@@ -181,21 +177,3 @@ class MotorDataDisplay:
         else:
             label.config(text=ratio_text, foreground="green")
             warning_label.config(text="")
-    
-    def get_value_labels(self):
-        """获取值标签字典"""
-        return self.value_labels 
-    
-    def get_background_color(self):
-        """安全地获取背景色"""
-        try:
-            # 尝试从父窗口获取背景色
-            current = self.parent
-            while current:
-                try:
-                    return current.cget("bg")
-                except:
-                    current = current.master
-            return "SystemButtonFace"  # 默认背景色
-        except:
-            return "SystemButtonFace"  # 默认背景色 

@@ -1,0 +1,14 @@
+{
+  "websocket": {
+    "host": "localhost",
+    "port": 8765
+  },
+  "database": {
+    "path": "motor_data.db"
+  },
+  "ui": {
+    "auto_connect": false,
+    "auto_reconnect": true,
+    "reconnect_interval": 5
+  }
+}

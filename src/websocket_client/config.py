@@ -8,8 +8,9 @@ logger = logging.getLogger(__name__)
 class WebSocketConfig:
     """WebSocket客户端配置管理"""
     
-    def __init__(self, config_file="websocket_config.json"):
-        self.config_file = config_file
+    def __init__(self):
+        config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+        self.config_file = config_path
         self.default_config = {
             "websocket": {
                 "host": "localhost",

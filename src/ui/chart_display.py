@@ -261,31 +261,5 @@ class MotorChartDisplay:
         
         # 更新图表显示
         self.update_chart_display()
-    
-    def refresh_chart(self):
-        """刷新图表数据"""
-        self.load_chart_data()
 
-    def create_data_display_scrollable(self, parent):
-        """创建可滚动的数据区"""
-        # 创建Canvas和垂直滚动条
-        container = ttk.Frame(parent)
-        container.pack(fill='both', expand=True)
-        canvas = tk.Canvas(container, borderwidth=0, highlightthickness=0)
-        vscroll = ttk.Scrollbar(container, orient='vertical', command=canvas.yview)
-        canvas.configure(yscrollcommand=vscroll.set)
-        canvas.pack(side='left', fill='both', expand=True)
-        vscroll.pack(side='right', fill='y')
-        # 创建内容Frame
-        data_frame = ttk.Frame(canvas)
-        # 将Frame放入Canvas
-        canvas.create_window((0, 0), window=data_frame, anchor='nw')
-        # 自动调整scrollregion
-        def on_configure(event):
-            canvas.configure(scrollregion=canvas.bbox('all'))
-        data_frame.bind('<Configure>', on_configure)
-        # 鼠标滚轮支持
-        def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1*(event.delta/120)), 'units')
-        canvas.bind_all('<MouseWheel>', _on_mousewheel)
-        return data_frame 
+    
