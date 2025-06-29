@@ -75,10 +75,10 @@ class WebSocketConfig:
             if os.path.exists(self.config_file):
                 with open(self.config_file, 'r', encoding='utf-8') as f:
                     config = json.load(f)
-                    logger.info(f"成功加载配置文件: {self.config_file}")
+                    # logger.info(f"成功加载配置文件: {self.config_file}")
                     return config
             else:
-                logger.info(f"配置文件不存在，使用默认配置: {self.config_file}")
+                # logger.info(f"配置文件不存在，使用默认配置: {self.config_file}")
                 return self.default_config.copy()
         except Exception as e:
             logger.error(f"加载配置文件失败: {str(e)}")
@@ -89,7 +89,7 @@ class WebSocketConfig:
         try:
             with open(self.config_file, 'w', encoding='utf-8') as f:
                 json.dump(self.config, f, indent=2, ensure_ascii=False)
-            logger.info(f"配置文件已保存: {self.config_file}")
+            # logger.info(f"配置文件已保存: {self.config_file}")
             return True
         except Exception as e:
             logger.error(f"保存配置文件失败: {str(e)}")
@@ -120,7 +120,7 @@ class WebSocketConfig:
         if not os.path.isabs(db_path):
             script_dir = self._get_script_directory()
             db_config["path"] = os.path.join(script_dir, db_path)
-            logger.info(f"数据库路径已解析为: {db_config['path']}")
+            # logger.info(f"数据库路径已解析为: {db_config['path']}")
         
         return db_config
     

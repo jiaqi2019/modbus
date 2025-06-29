@@ -48,7 +48,7 @@ class DataProcessor:
         self.motors_data: Dict[int, MotorData] = {}
         self.on_data_updated = None
         
-        logger.info("数据处理器初始化完成")
+        # logger.info("数据处理器初始化完成")
     
     def set_data_updated_callback(self, callback):
         """设置数据更新回调函数"""
@@ -58,7 +58,7 @@ class DataProcessor:
         """处理WebSocket消息"""
         try:
             # 记录原始消息内容
-            # logger.info(f"收到WebSocket消息: {message}")
+            # # logger.info(f"收到WebSocket消息: {message}")
             
             # 检查消息类型
             message_type = message.get("type", "")
@@ -85,7 +85,7 @@ class DataProcessor:
             motors_data = message.get("data", [])
             updated_motors = []
             
-            # logger.info(f"处理motor_data消息，数据条数: {len(motors_data)}")
+            # # logger.info(f"处理motor_data消息，数据条数: {len(motors_data)}")
             
             for motor_data in motors_data:
                 motor_id = motor_data.get("motor_id")
@@ -98,7 +98,7 @@ class DataProcessor:
                 if motor is None:
                     motor = MotorData(motor_id=motor_id)
                     self.motors_data[motor_id] = motor
-                    logger.info(f"创建新电机数据对象: {motor_id}")
+                    # logger.info(f"创建新电机数据对象: {motor_id}")
                 
                 # 更新数据
                 motor.phase_a_current = motor_data.get("phase_a_current", 0.0)
@@ -131,7 +131,7 @@ class DataProcessor:
             
             # 触发数据更新回调
             if self.on_data_updated and updated_motors:
-                logger.info(f"触发数据更新回调，电机数量: {len(updated_motors)}")
+                # logger.info(f"触发数据更新回调，电机数量: {len(updated_motors)}")
                 self.on_data_updated(updated_motors)
             else:
                 logger.warning(f"数据更新回调未设置或无更新数据，回调函数: {self.on_data_updated is not None}")
@@ -149,14 +149,14 @@ class DataProcessor:
             data = message.get("data", {})
             motors_data = []
             
-            logger.info(f"处理motor_update消息，data类型: {type(data)}")
-            logger.debug(f"motor_update消息内容: {message}")
+            # # logger.info(f"处理motor_update消息，data类型: {type(data)}")
+            # logger.debug(f"motor_update消息内容: {message}")
             
             # 处理不同的数据格式
             if isinstance(data, list):
                 # 如果data是列表，直接使用
                 motors_data = data
-                logger.info(f"data是列表格式，电机数量: {len(motors_data)}")
+                # # logger.info(f"data是列表格式，电机数量: {len(motors_data)}")
                 # 记录每个电机的详细数据
                 for i, motor_data in enumerate(motors_data):
                     logger.debug(f"电机 {i+1} 原始数据: {motor_data}")
@@ -170,7 +170,7 @@ class DataProcessor:
                     motors_data = list(data.values())
                 else:
                     # 空字典，尝试从消息根级别获取数据
-                    logger.info("data字段为空字典，尝试从消息根级别获取电机数据")
+                    # logger.info("data字段为空字典，尝试从消息根级别获取电机数据")
                     for key, value in message.items():
                         if key not in ["type", "timestamp"]:
                             if isinstance(value, dict) and "motor_id" in value:
@@ -196,7 +196,7 @@ class DataProcessor:
                 if motor is None:
                     motor = MotorData(motor_id=motor_id)
                     self.motors_data[motor_id] = motor
-                    logger.info(f"创建新电机数据对象: {motor_id}")
+                    # logger.info(f"创建新电机数据对象: {motor_id}")
                 
                 # 更新数据 - 支持部分字段更新
                 if "phase_a_current" in motor_data:
@@ -244,7 +244,7 @@ class DataProcessor:
             
             # 触发数据更新回调
             if self.on_data_updated and updated_motors:
-                logger.info(f"触发数据更新回调，电机数量: {len(updated_motors)}")
+                # logger.info(f"触发数据更新回调，电机数量: {len(updated_motors)}")
                 self.on_data_updated(updated_motors)
             else:
                 logger.warning(f"数据更新回调未设置或无更新数据，回调函数: {self.on_data_updated is not None}")
@@ -262,14 +262,14 @@ class DataProcessor:
             data = message.get("data", {})
             motors_data = []
             
-            logger.info(f"处理latest_data消息，data类型: {type(data)}")
+            # logger.info(f"处理latest_data消息，data类型: {type(data)}")
             logger.debug(f"latest_data消息内容: {message}")
             
             # 处理不同的数据格式
             if isinstance(data, list):
                 # 如果data是列表，直接使用
                 motors_data = data
-                logger.info(f"data是列表格式，电机数量: {len(motors_data)}")
+                # logger.info(f"data是列表格式，电机数量: {len(motors_data)}")
             elif isinstance(data, dict):
                 # 如果data是字典，检查是否包含电机数据
                 if "motor_id" in data:
@@ -280,7 +280,7 @@ class DataProcessor:
                     motors_data = list(data.values())
                 else:
                     # 空字典，尝试从消息根级别获取数据
-                    logger.info("data字段为空字典，尝试从消息根级别获取电机数据")
+                    # logger.info("data字段为空字典，尝试从消息根级别获取电机数据")
                     for key, value in message.items():
                         if key not in ["type", "timestamp"]:
                             if isinstance(value, dict) and "motor_id" in value:
@@ -306,7 +306,7 @@ class DataProcessor:
                 if motor is None:
                     motor = MotorData(motor_id=motor_id)
                     self.motors_data[motor_id] = motor
-                    logger.info(f"创建新电机数据对象: {motor_id}")
+                    # logger.info(f"创建新电机数据对象: {motor_id}")
                 
                 # 更新数据 - 支持部分字段更新
                 if "phase_a_current" in motor_data:
@@ -351,11 +351,11 @@ class DataProcessor:
                     motor.last_update = datetime.now()
                 
                 updated_motors.append(motor)
-                # logger.info(f"更新电机 {motor_id} 数据 (latest_data)")
+                # # logger.info(f"更新电机 {motor_id} 数据 (latest_data)")
             
             # 触发数据更新回调
             if self.on_data_updated and updated_motors:
-                logger.info(f"触发数据更新回调，电机数量: {len(updated_motors)}")
+                # logger.info(f"触发数据更新回调，电机数量: {len(updated_motors)}")
                 self.on_data_updated(updated_motors)
             else:
                 logger.warning(f"数据更新回调未设置或无更新数据，回调函数: {self.on_data_updated is not None}")
@@ -370,7 +370,7 @@ class DataProcessor:
         """处理状态消息"""
         try:
             status = message.get("status", "")
-            logger.info(f"收到状态消息: {status}")
+            # logger.info(f"收到状态消息: {status}")
             return []
         except Exception as e:
             logger.error(f"处理状态消息失败: {str(e)}")
@@ -391,7 +391,7 @@ class DataProcessor:
     def clear_data(self):
         """清除所有数据"""
         self.motors_data.clear()
-        logger.info("所有电机数据已清除")
+        # logger.info("所有电机数据已清除")
     
     def validate_motor_data(self, motor_data: Dict[str, Any]) -> bool:
         """验证电机数据格式"""

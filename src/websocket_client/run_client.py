@@ -23,7 +23,7 @@ def main():
     )
     
     logger = logging.getLogger(__name__)
-    logger.info("启动WebSocket客户端...")
+    # logger.info("启动WebSocket客户端...")
     
     try:
         # 导入并运行主UI

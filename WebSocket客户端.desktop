@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=WebSocket客户端
+Name[zh_CN]=WebSocket客户端
+Comment=电机监控系统 - WebSocket客户端
+Comment[zh_CN]=电机监控系统 - WebSocket客户端
+Exec=/f:/workspace/python/qilin/src/websocket_client/launch_websocket_client.sh
+Icon=applications-internet
+Terminal=true
+Categories=Network;Development;
+Keywords=websocket;motor;monitor;client;
+StartupNotify=true 

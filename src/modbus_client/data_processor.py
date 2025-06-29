@@ -64,16 +64,16 @@ class MotorData:
                 self.excitation_current  # 实际励磁电流
             ]
             
-            # logger.info(f"电机 {self.motor_id} 计算开始: {genmon}")
+            # # logger.info(f"电机 {self.motor_id} 计算开始: {genmon}")
             # 计算励磁电流和比值
             calculated_current, ratio = calc_module.calculate(genmon)
             
             self.calculated_excitation_current = calculated_current
             self.excitation_current_ratio = ratio
             
-            # logger.info(f"电机 {self.motor_id} 计算完成:")
-            # logger.info(f"计算得到的励磁电流: {calculated_current:.2f}")
-            # logger.info(f"励磁电流比值: {ratio*100:.2f}%")
+            # # logger.info(f"电机 {self.motor_id} 计算完成:")
+            # # logger.info(f"计算得到的励磁电流: {calculated_current:.2f}")
+            # # logger.info(f"励磁电流比值: {ratio*100:.2f}%")
             
         except Exception as e:
             logger.error(f"电机 {self.motor_id} 励磁电流计算失败: {str(e)}")
@@ -100,7 +100,7 @@ class DataProcessor:
     def __init__(self, motor_count=12):
         self.motor_count = motor_count
         self.motors = [MotorData(i+1) for i in range(motor_count)]
-        # logger.info(f"数据处理器初始化完成，支持 {motor_count} 台电机")
+        # # logger.info(f"数据处理器初始化完成，支持 {motor_count} 台电机")
     
     def to_float(self, high, low):
         """将两个16位寄存器转换为32位浮点数"""
@@ -117,7 +117,7 @@ class DataProcessor:
                 logger.error(f"数据长度不足: 期望 {self.motor_count * 18} 个寄存器，实际收到 {len(data)} 个")
                 return False
 
-            # logger.info(f"开始解析数据，原始数据: {' '.join([f'{x:04X}' for x in data])}")
+            # # logger.info(f"开始解析数据，原始数据: {' '.join([f'{x:04X}' for x in data])}")
 
             # 解析所有电机数据
             for i in range(self.motor_count):
@@ -125,7 +125,7 @@ class DataProcessor:
                 motor = self.motors[i]
                 
                 try:
-                    # logger.info(f"开始解析电机{i+1}数据...")
+                    # # logger.info(f"开始解析电机{i+1}数据...")
                     # 每两个寄存器组合成一个浮点数
                     motor.phase_a_current = self.to_float(data[start_idx], data[start_idx + 1])
                     motor.phase_b_current = self.to_float(data[start_idx + 2], data[start_idx + 3])
@@ -155,10 +155,10 @@ class DataProcessor:
                     continue
 
             # 打印解析后的数据
-            # logger.info("\n=== 电机数据更新 ===")
+            # # logger.info("\n=== 电机数据更新 ===")
             # for motor in self.motors:
-            #     logger.info(str(motor))
-            # logger.info("==================\n")
+            #     # logger.info(str(motor))
+            # # logger.info("==================\n")
 
             return True
 

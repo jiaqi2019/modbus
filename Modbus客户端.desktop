@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Modbus客户端
+Name[zh_CN]=Modbus客户端
+Comment=电机监控系统 - Modbus客户端
+Comment[zh_CN]=电机监控系统 - Modbus客户端
+Exec=/f:/workspace/python/qilin/src/modbus_client/launch_modbus_client.sh
+Icon=applications-internet
+Terminal=true
+Categories=Network;Development;
+Keywords=modbus;motor;monitor;client;
+StartupNotify=true 

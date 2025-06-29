@@ -85,7 +85,7 @@ class MainUI:
         try:
             with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(self.config, f, indent=4, ensure_ascii=False)
-            logger.info("配置文件保存成功")
+            # logger.info("配置文件保存成功")
         except Exception as e:
             logger.error(f"保存配置文件失败: {str(e)}")
             messagebox.showerror("错误", f"保存配置文件失败: {str(e)}")
@@ -166,19 +166,19 @@ class MainUI:
             script_dir = self._get_script_directory()
             db_path = os.path.join(script_dir, "motor_data.db")
             self.db_manager = DatabaseManager(db_path)
-            logger.info(f"数据库初始化完成: {db_path}")
+            # logger.info(f"数据库初始化完成: {db_path}")
             
             # 初始化数据处理器
             motor_count = self.config['modbus']['motor_count']
             self.data_processor = DataProcessor(motor_count)
-            logger.info(f"数据处理器初始化完成，支持 {motor_count} 台电机")
+            # logger.info(f"数据处理器初始化完成，支持 {motor_count} 台电机")
             
             # 初始化WebSocket服务器
             ws_host = self.config['websocket']['host']
             ws_port = self.config['websocket']['port']
             self.websocket_server = WebSocketServer(self, host=ws_host, port=ws_port)
             self.websocket_server.start()
-            logger.info(f"WebSocket服务器启动完成 - {ws_host}:{ws_port}")
+            # logger.info(f"WebSocket服务器启动完成 - {ws_host}:{ws_port}")
             
             # 设置初始配置编辑状态（未连接时允许编辑）
             self.set_config_editable(True)
@@ -271,7 +271,7 @@ class MainUI:
                 self.is_connected = True
                 self.update_connection_status()
                 self.create_motor_displays(motor_count)
-                logger.info("Modbus连接成功")
+                # logger.info("Modbus连接成功")
             else:
                 self.is_connected = False
                 self.update_connection_status()
@@ -285,13 +285,13 @@ class MainUI:
     def disconnect_modbus(self):
         """断开Modbus连接"""
         try:
-            logger.info("开始断开Modbus连接")
+            # logger.info("开始断开Modbus连接")
             if self.modbus_client:
                 self.modbus_client.disconnect()
                 self.is_connected = False
-                logger.info(f"断开连接后，is_connected={self.is_connected}")
+                # logger.info(f"断开连接后，is_connected={self.is_connected}")
                 self.update_connection_status()
-                logger.info("Modbus连接已断开")
+                # logger.info("Modbus连接已断开")
         except Exception as e:
             logger.error(f"断开连接失败: {str(e)}")
     
@@ -307,7 +307,7 @@ class MainUI:
         # 计算需要多少个分组tab
         group_count = (motor_count + 1) // 2  # 向上取整
         
-        logger.info(f"创建 {motor_count} 台电机的显示，分为 {group_count} 个组")
+        # logger.info(f"创建 {motor_count} 台电机的显示，分为 {group_count} 个组")
         
         # 为每个分组创建tab
         for group_id in range(group_count):
@@ -346,9 +346,9 @@ class MainUI:
                 data_display = MotorDataDisplay(data_frame, motor_id)
                 self.motor_displays[motor_id] = data_display
 
-                logger.info(f"创建电机 {motor_id} 的显示组件")
+                # logger.info(f"创建电机 {motor_id} 的显示组件")
         
-        logger.info(f"电机显示组件创建完成，共 {len(self.motor_displays)} 个数据显示，{len(self.chart_displays)} 个图表显示")
+        # logger.info(f"电机显示组件创建完成，共 {len(self.motor_displays)} 个数据显示，{len(self.chart_displays)} 个图表显示")
     
     def start_monitoring(self):
         """开始监控"""
@@ -366,7 +366,7 @@ class MainUI:
         # 更新按钮状态
         self.top_menu.update_connection_status(self.is_connected, self.is_monitoring)
         
-        logger.info("开始监控")
+        # logger.info("开始监控")
     
     def stop_monitoring(self):
         """停止监控"""
@@ -375,7 +375,7 @@ class MainUI:
         # 更新按钮状态
         self.top_menu.update_connection_status(self.is_connected, self.is_monitoring)
         
-        logger.info("停止监控")
+        # logger.info("停止监控")
     
     def monitoring_loop(self):
         """监控循环"""
@@ -447,9 +447,9 @@ class MainUI:
             loop.run_until_complete(self.websocket_server.broadcast_data(formatted_data))
             
             # 打印广播数据中所有电机的excitation_current_ratio值
-            logger.info("广播完成，电机excitation_current_ratio值:")
-            for motor_data in motors_data:
-                logger.info(f"电机 {motor_data.motor_id}: excitation_current_ratio = {motor_data.excitation_current_ratio:.2f}")
+            # # logger.info("广播完成，电机excitation_current_ratio值:")
+            # for motor_data in motors_data:
+            #     # logger.info(f"电机 {motor_data.motor_id}: excitation_current_ratio = {motor_data.excitation_current_ratio:.2f}")
             
             
         except Exception as e:
@@ -484,7 +484,7 @@ class MainUI:
     
     def update_connection_status(self):
         """更新连接状态显示"""
-        logger.info(f"更新连接状态: is_connected={self.is_connected}")
+        # logger.info(f"更新连接状态: is_connected={self.is_connected}")
         
         # 更新top_menu组件的连接状态
         self.top_menu.update_connection_status(self.is_connected, self.is_monitoring)
@@ -570,7 +570,7 @@ WebSocket服务器:
             if self.websocket_server:
                 self.websocket_server.stop()
                 
-            logger.info("系统资源清理完成")
+            # logger.info("系统资源清理完成")
             
         except Exception as e:
             logger.error(f"清理资源失败: {str(e)}")

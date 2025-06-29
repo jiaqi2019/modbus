@@ -170,7 +170,7 @@ class MotorChartDisplay:
             self.update_chart_display()
             
         except Exception as e:
-            logger.error(f"加载电机{self.motor_id}图表数据失败: {str(e)}")
+            # logger.error(f"加载电机{self.motor_id}图表数据失败: {str(e)}")
             # 初始化空数据
             self.chart_data['timestamps'] = []
             self.chart_data['ratios'] = []

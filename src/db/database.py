@@ -104,7 +104,7 @@ class DatabaseManager:
                 ''')
                 
                 conn.commit()
-                logger.info("数据库初始化完成")
+                # # logger.info("数据库初始化完成")
                 
         except Exception as e:
             logger.error(f"数据库初始化失败: {str(e)}")
@@ -140,7 +140,7 @@ class DatabaseManager:
                 ))
                 
                 conn.commit()
-                logger.info(f"电机 {motor_data.motor_id} 数据已保存到数据库")
+                # logger.info(f"电机 {motor_data.motor_id} 数据已保存到数据库")
                 
         except Exception as e:
             logger.error(f"保存电机 {motor_data.motor_id} 数据失败: {str(e)}")
@@ -176,7 +176,6 @@ class DatabaseManager:
                     ))
                 
                 conn.commit()
-                logger.info(f"所有电机数据已保存到数据库，共 {len(motors)} 台电机")
                 
         except Exception as e:
             logger.error(f"保存所有电机数据失败: {str(e)}")
@@ -313,7 +312,7 @@ class DatabaseManager:
                 deleted_count = cursor.rowcount
                 conn.commit()
                 
-                logger.info(f"清理了 {deleted_count} 条旧数据（保留最近 {days_to_keep} 天）")
+                # logger.info(f"清理了 {deleted_count} 条旧数据（保留最近 {days_to_keep} 天）")
                 return deleted_count
                 
         except Exception as e:
@@ -339,7 +338,7 @@ class DatabaseManager:
                 size_after = os.path.getsize(self.db_path)
                 size_saved = size_before - size_after
                 
-                logger.info(f"数据库优化完成，节省空间: {size_saved} 字节 ({round(size_saved/1024/1024, 2)} MB)")
+                # logger.info(f"数据库优化完成，节省空间: {size_saved} 字节 ({round(size_saved/1024/1024, 2)} MB)")
                 return size_saved
                 
         except Exception as e:

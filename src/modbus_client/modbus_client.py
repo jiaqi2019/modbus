@@ -38,7 +38,7 @@ class ModbusClient:
     """Modbus客户端，只负责与Modbus服务器通信"""
     
     def __init__(self, host=None, port=None, motor_count=None):
-        logger.info("初始化 Modbus 客户端...")
+        # logger.info("初始化 Modbus 客户端...")
         # 如果没有提供host和port，从配置文件读取
         if host is None or port is None or motor_count is None:
             host, port, motor_count, _, _ = load_config()
@@ -48,7 +48,7 @@ class ModbusClient:
         self.motor_count = motor_count
         self.client = ModbusTcpClient(host, port)
         
-        logger.info(f"Modbus 客户端初始化完成，监控 {motor_count} 台电机")
+        # logger.info(f"Modbus 客户端初始化完成，监控 {motor_count} 台电机")
 
     def connect(self):
         """连接到Modbus服务器"""
@@ -76,7 +76,7 @@ class ModbusClient:
                     return None
                 all_data.extend(result.registers)
             
-            # logger.info(f"收到数据: {' '.join([f'{x:04X}' for x in all_data])}")
+            # # logger.info(f"收到数据: {' '.join([f'{x:04X}' for x in all_data])}")
             
             return all_data
         except Exception as e:

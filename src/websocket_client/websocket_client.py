@@ -36,7 +36,7 @@ class WebSocketClient:
         self.loop = None
         self.thread = None
         
-        logger.info(f"WebSocket客户端初始化完成: {self.uri}")
+        # logger.info(f"WebSocket客户端初始化完成: {self.uri}")
     
     def set_callbacks(self, on_connect=None, on_disconnect=None, on_message=None, on_error=None):
         """设置回调函数"""
@@ -54,11 +54,11 @@ class WebSocketClient:
         self.should_reconnect = True
         self.thread = threading.Thread(target=self._run_event_loop, daemon=True)
         self.thread.start()
-        logger.info("WebSocket客户端已启动")
+        # logger.info("WebSocket客户端已启动")
     
     def stop(self):
         """停止WebSocket客户端"""
-        logger.info("正在停止WebSocket客户端...")
+        # logger.info("正在停止WebSocket客户端...")
         
         # 设置停止标志
         self.should_reconnect = False
@@ -66,14 +66,14 @@ class WebSocketClient:
         
         # 等待线程自然结束，而不是强制停止事件循环
         if self.thread and self.thread.is_alive():
-            logger.info("等待WebSocket线程结束...")
+            # logger.info("等待WebSocket线程结束...")
             # 给线程一些时间来自然结束
             self.thread.join(timeout=3.0)
         
             if self.thread.is_alive():
                 logger.warning("WebSocket线程未能在3秒内结束")
         
-        logger.info("WebSocket客户端已停止")
+        # logger.info("WebSocket客户端已停止")
     
     def _run_event_loop(self):
         """在独立线程中运行事件循环"""
@@ -128,7 +128,7 @@ class WebSocketClient:
                 self.is_connecting = False
                 
                 if self.should_reconnect:
-                    logger.info(f"等待 {self.reconnect_interval} 秒后重连...")
+                    # logger.info(f"等待 {self.reconnect_interval} 秒后重连...")
                     await asyncio.sleep(self.reconnect_interval)
                 else:
                     break
@@ -137,13 +137,13 @@ class WebSocketClient:
         """建立WebSocket连接"""
         try:
             self.is_connecting = True
-            logger.info(f"正在连接WebSocket服务器: {self.uri}")
+            # logger.info(f"正在连接WebSocket服务器: {self.uri}")
             
             self.websocket = await websockets.connect(self.uri)
             self.is_connected = True
             self.is_connecting = False
             
-            logger.info("WebSocket连接成功")
+            # logger.info("WebSocket连接成功")
             
             if self.on_connect:
                 self.on_connect()
@@ -158,7 +158,7 @@ class WebSocketClient:
         try:
             async for message in self.websocket:
                 if not self.should_reconnect:
-                    logger.info("收到停止信号，退出消息监听")
+                    # logger.info("收到停止信号，退出消息监听")
                     break
                 
                 try:
@@ -175,7 +175,7 @@ class WebSocketClient:
                     logger.error(f"处理消息失败: {str(e)}")
                     
         except websockets.exceptions.ConnectionClosed:
-            logger.info("WebSocket连接已关闭")
+            # logger.info("WebSocket连接已关闭")
             self.is_connected = False
             if self.on_disconnect:
                 self.on_disconnect()
@@ -222,7 +222,7 @@ class WebSocketClient:
         self.port = port
         self.uri = f"ws://{host}:{port}"
         
-        logger.info(f"WebSocket配置已更新: {self.uri}")
+        # logger.info(f"WebSocket配置已更新: {self.uri}")
         
         if was_connected:
             time.sleep(1)  # 等待停止完成

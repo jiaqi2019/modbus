@@ -34,7 +34,7 @@ class WebSocketServer:
     async def register(self, websocket):
         """注册新的WebSocket客户端"""
         self.clients.add(websocket)
-        logger.info(f"客户端连接，当前连接数: {len(self.clients)}")
+        # logger.info(f"客户端连接，当前连接数: {len(self.clients)}")
         
         # 发送当前所有电机的最新数据
         await self.send_latest_data_to_client(websocket)
@@ -42,28 +42,28 @@ class WebSocketServer:
     async def unregister(self, websocket):
         """注销WebSocket客户端"""
         self.clients.discard(websocket)
-        logger.info(f"客户端断开，当前连接数: {len(self.clients)}")
+        # logger.info(f"客户端断开，当前连接数: {len(self.clients)}")
     
     async def send_latest_data_to_client(self, websocket):
         """向指定客户端发送最新数据"""
         try:
-            logger.info("开始获取最新数据...")
+            # logger.info("开始获取最新数据...")
             motors_data = self.data_source.get_latest_motors_data()
-            logger.info(f"获取到数据: {type(motors_data)}, 长度: {len(motors_data) if motors_data else 0}")
+            # logger.info(f"获取到数据: {type(motors_data)}, 长度: {len(motors_data) if motors_data else 0}")
             
             if motors_data:
                 # 确保数据是字典格式
                 formatted_data = self._format_motors_data(motors_data)
-                logger.info(f"格式化后数据长度: {len(formatted_data)}")
+                # logger.info(f"格式化后数据长度: {len(formatted_data)}")
                 
                 message = {
                     'type': 'latest_data',
                     'data': formatted_data,
                     'timestamp': datetime.now().isoformat()
                 }
-                logger.info(f"发送消息: {message['type']}, 数据条数: {len(formatted_data)}")
+                # logger.info(f"发送消息: {message['type']}, 数据条数: {len(formatted_data)}")
                 await websocket.send(json.dumps(message, ensure_ascii=False))
-                logger.info("数据发送成功")
+                # logger.info("数据发送成功")
             else:
                 logger.warning("没有获取到电机数据")
         except Exception as e:
@@ -74,26 +74,26 @@ class WebSocketServer:
     def _format_motors_data(self, motors_data):
         """格式化电机数据，确保是字典格式"""
         try:
-            logger.info(f"开始格式化数据，原始数据类型: {type(motors_data)}")
+            # logger.info(f"开始格式化数据，原始数据类型: {type(motors_data)}")
             formatted_data = []
             
             for i, motor_data in enumerate(motors_data):
-                logger.info(f"处理第 {i+1} 个电机数据，类型: {type(motor_data)}")
+                # logger.info(f"处理第 {i+1} 个电机数据，类型: {type(motor_data)}")
                 
                 if hasattr(motor_data, 'to_dict'):
                     # 如果是MotorData对象，转换为字典
-                    logger.info(f"MotorData对象，转换为字典")
+                    # logger.info(f"MotorData对象，转换为字典")
                     formatted_data.append(motor_data.to_dict())
                 elif isinstance(motor_data, dict):
                     # 如果已经是字典，直接使用
-                    logger.info(f"字典类型，直接使用")
+                    # logger.info(f"字典类型，直接使用")
                     formatted_data.append(motor_data)
                 else:
                     # 其他类型，尝试转换为字典
                     logger.warning(f"未知的电机数据类型: {type(motor_data)}")
                     continue
             
-            logger.info(f"格式化完成，共 {len(formatted_data)} 条数据")
+            # logger.info(f"格式化完成，共 {len(formatted_data)} 条数据")
             return formatted_data
         except Exception as e:
             logger.error(f"格式化电机数据失败: {str(e)}")
@@ -230,7 +230,7 @@ class WebSocketServer:
         """启动数据监控线程"""
         def monitor_loop():
             last_data = []
-            logger.info("数据监控线程开始运行")
+            # logger.info("数据监控线程开始运行")
             
             while self.running:
                 try:
@@ -262,28 +262,28 @@ class WebSocketServer:
                         has_new_data = False
                         if not last_data:
                             has_new_data = bool(current_data)
-                            logger.info(f"首次数据: {len(current_data)} 台电机")
+                            # logger.info(f"首次数据: {len(current_data)} 台电机")
                         else:
                             # 简单的长度比较，如果有变化就认为有新数据
                             if len(current_data) != len(last_data):
                                 has_new_data = True
-                                logger.info(f"电机数量变化: {len(last_data)} -> {len(current_data)}")
+                                # logger.info(f"电机数量变化: {len(last_data)} -> {len(current_data)}")
                             else:
                                 # 比较数据内容
                                 for i, (current, last) in enumerate(zip(current_data, last_data)):
                                     if current != last:
                                         has_new_data = True
-                                        logger.info(f"发现新数据，电机 {current.get('motor_id', i)}")
+                                        # logger.info(f"发现新数据，电机 {current.get('motor_id', i)}")
                                         break
                         
                         # 如果有新数据，广播给所有客户端
                         if has_new_data and self.clients:
-                            logger.info(f"广播新数据给 {len(self.clients)} 个客户端")
+                            # logger.info(f"广播新数据给 {len(self.clients)} 个客户端")
                             asyncio.run(self.broadcast_data(current_data))
-                        elif has_new_data:
-                            logger.info("有新数据但没有连接的客户端")
-                        else:
-                            logger.debug("没有新数据")
+                        # elif has_new_data:
+                            # logger.info("有新数据但没有连接的客户端")
+                        # else:
+                            # logger.debug("没有新数据")
                         
                         last_data = current_data
                     else:
@@ -300,7 +300,7 @@ class WebSocketServer:
         # 启动监控线程
         monitor_thread = threading.Thread(target=monitor_loop, daemon=True)
         monitor_thread.start()
-        logger.info("数据监控线程已启动")
+        # logger.info("数据监控线程已启动")
     
     async def start_server(self):
         """启动WebSocket服务器"""
@@ -314,7 +314,7 @@ class WebSocketServer:
             self.port
         )
         
-        logger.info(f"WebSocket服务器启动: ws://{self.host}:{self.port}")
+        # logger.info(f"WebSocket服务器启动: ws://{self.host}:{self.port}")
         
         try:
             await self.server.wait_closed()
@@ -330,14 +330,14 @@ class WebSocketServer:
         
         server_thread = threading.Thread(target=run_server, daemon=True)
         server_thread.start()
-        logger.info("WebSocket服务器已在后台启动")
+        # logger.info("WebSocket服务器已在后台启动")
     
     def stop(self):
         """停止服务器"""
         self.running = False
         if self.server:
             self.server.close()
-        logger.info("WebSocket服务器已停止")
+        # logger.info("WebSocket服务器已停止")
     
     def get_client_count(self):
         """获取当前连接的客户端数量"""

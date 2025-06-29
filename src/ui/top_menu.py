@@ -141,7 +141,7 @@ class TopMenu:
         """设置配置输入框的编辑状态"""
         state = 'normal' if editable else 'disabled'
         
-        logger.info(f"设置配置编辑状态: {state}")
+        # logger.info(f"设置配置编辑状态: {state}")
         
         # 设置所有配置输入框的状态
         self.host_entry.config(state=state)
@@ -157,7 +157,7 @@ class TopMenu:
         # 强制更新UI
         self.parent.update_idletasks()
         
-        logger.info(f"配置编辑状态设置完成: {state}")
+        # logger.info(f"配置编辑状态设置完成: {state}")
     
     def update_connection_status(self, is_connected, is_monitoring=False):
         """更新连接状态"""

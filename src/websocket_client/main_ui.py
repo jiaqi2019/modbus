@@ -84,7 +84,7 @@ class WebSocketClientUI:
         # 创建主要内容区域
         self.create_main_content(main_frame)
         
-        logger.info("UI界面初始化完成")
+        # logger.info("UI界面初始化完成")
     
     def create_main_content(self, parent):
         """创建主要内容区域"""
@@ -170,7 +170,7 @@ WebSocket配置:
         try:
             # 如果已有连接，先断开
             if self.websocket_client:
-                logger.info("检测到已有连接，先断开")
+                # logger.info("检测到已有连接，先断开")
                 self.websocket_client.stop()
                 self.websocket_client = None
                 # 等待一下确保完全断开
@@ -194,7 +194,7 @@ WebSocket配置:
             # 启动客户端
             self.websocket_client.start()
             
-            logger.info(f"正在连接到WebSocket服务器: {host}:{port}")
+            # logger.info(f"正在连接到WebSocket服务器: {host}:{port}")
             
         except Exception as e:
             logger.error(f"连接WebSocket失败: {str(e)}")
@@ -211,7 +211,7 @@ WebSocket配置:
             
             if success:
                 self.top_menu.show_info_message("配置已保存")
-                logger.info("配置已保存")
+                # logger.info("配置已保存")
             else:
                 self.top_menu.show_error_message("保存配置失败")
                 
@@ -234,7 +234,7 @@ WebSocket配置:
     def on_disconnect(self):
         """断开连接按钮回调"""
         try:
-            logger.info("用户请求断开连接")
+            # logger.info("用户请求断开连接")
             
             # 停止消息处理线程
             self.stop_message_processor()
@@ -251,7 +251,7 @@ WebSocket配置:
             # 更新UI状态
             self.root.after(0, lambda: self.top_menu.update_connection_status(False))
             
-            logger.info("断开连接完成")
+            # logger.info("断开连接完成")
             
         except Exception as e:
             logger.error(f"断开连接失败: {str(e)}")
@@ -259,7 +259,7 @@ WebSocket配置:
     
     def on_websocket_connect(self):
         """WebSocket连接成功回调"""
-        logger.info("WebSocket连接成功")
+        # logger.info("WebSocket连接成功")
         self.is_connected = True
         
         # 更新UI状态
@@ -270,7 +270,7 @@ WebSocket配置:
     
     def on_websocket_disconnect(self):
         """WebSocket断开连接回调"""
-        logger.info("WebSocket连接断开")
+        # logger.info("WebSocket连接断开")
         self.is_connected = False
         self.is_monitoring = False
         
@@ -295,7 +295,7 @@ WebSocket配置:
     def on_data_updated(self, motors: List[MotorData]):
         """数据更新回调"""
         try:
-            logger.info(f"数据更新回调被触发，电机数量: {len(motors)}")
+            # # logger.info(f"数据更新回调被触发，电机数量: {len(motors)}")
             
             # 记录每个电机的详细信息（减少日志输出）
             for motor in motors:
@@ -326,7 +326,7 @@ WebSocket配置:
                 def create_components_async():
                     try:
                         for motor_id in missing_components:
-                            logger.info(f"创建电机 {motor_id} 显示组件")
+                            # # logger.info(f"创建电机 {motor_id} 显示组件")
                             # 在主线程中创建UI组件
                             self.root.after(0, lambda mid=motor_id: self.create_motor_displays_for_motor(mid))
                     except Exception as e:
@@ -351,7 +351,7 @@ WebSocket配置:
             return
         
         self.is_monitoring = True
-        logger.info("开始监控电机数据")
+        # # logger.info("开始监控电机数据")
     
     def update_motor_displays(self, motors: List[MotorData]):
         """更新电机显示"""
@@ -404,7 +404,7 @@ WebSocket配置:
             if group_frame is None:
                 group_frame = ttk.Frame(self.motor_notebook)
                 self.motor_notebook.add(group_frame, text=group_tab_title)
-                logger.info(f"创建新的分组页面: {group_tab_title}")
+                # logger.info(f"创建新的分组页面: {group_tab_title}")
             
             # 检查电机框架是否已存在
             existing_motor_frame = None
@@ -414,7 +414,7 @@ WebSocket配置:
                     break
             
             if existing_motor_frame:
-                logger.info(f"电机 {motor_id} 的显示组件已存在")
+                # logger.info(f"电机 {motor_id} 的显示组件已存在")
                 return
             
             # 创建电机框架
@@ -442,7 +442,7 @@ WebSocket配置:
             data_display = MotorDataDisplay(data_frame, motor_id)
             self.motor_displays[motor_id] = data_display
 
-            logger.info(f"创建电机 {motor_id} 的显示组件，分组: {group_tab_title}")
+            # logger.info(f"创建电机 {motor_id} 的显示组件，分组: {group_tab_title}")
             
         except Exception as e:
             logger.error(f"创建电机 {motor_id} 显示组件失败: {str(e)}")
@@ -451,7 +451,7 @@ WebSocket配置:
     def run(self):
         """运行主程序"""
         try:
-            logger.info("启动WebSocket客户端UI")
+            # logger.info("启动WebSocket客户端UI")
             
             # 定期更新系统信息
             def update_info():
@@ -490,7 +490,7 @@ WebSocket配置:
         self.message_processing = True
         message_thread = threading.Thread(target=process_messages, daemon=True)
         message_thread.start()
-        logger.info("消息处理线程已启动")
+        # logger.info("消息处理线程已启动")
     
     def process_message_sync(self, message: Dict[str, Any]):
         """同步处理消息"""
@@ -498,7 +498,7 @@ WebSocket配置:
             updated_motors = self.data_processor.process_websocket_message(message)
             
             if updated_motors:
-                logger.info(f"处理消息完成，电机数量: {len(updated_motors)}")
+                # # logger.info(f"处理消息完成，电机数量: {len(updated_motors)}")
                 # 在主线程中触发UI更新
                 self.root.after(0, lambda: self.on_data_updated(updated_motors))
             else:
@@ -511,7 +511,7 @@ WebSocket配置:
         """停止消息处理线程"""
         self.message_processing = False
         self.message_queue.put(None)  # 发送停止信号
-        logger.info("消息处理线程已停止")
+        # logger.info("消息处理线程已停止")
 
 def main():
     """主函数"""
