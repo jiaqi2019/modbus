@@ -270,4 +270,19 @@ class MotorChartDisplay:
         # 更新图表显示
         self.update_chart_display()
 
+    def set_data_history(self, history_list):
+        """设置历史数据，history_list为MotorData对象列表，刷新图表"""
+        # 清空现有数据
+        self.chart_data['timestamps'] = []
+        self.chart_data['ratios'] = []
+        
+        # 添加历史数据
+        for motor_data in history_list:
+            if motor_data.last_update:
+                self.chart_data['timestamps'].append(motor_data.last_update)
+                self.chart_data['ratios'].append(motor_data.excitation_current_ratio * 100)
+        
+        # 更新图表显示
+        self.update_chart_display()
+
     

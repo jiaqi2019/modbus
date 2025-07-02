@@ -3,6 +3,8 @@ import logging
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
+from collections import deque
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -49,12 +51,21 @@ class DataProcessor:
     def __init__(self):
         self.motors_data: Dict[int, MotorData] = {}
         self.on_data_updated = None
+        # 新增：历史数据缓存
+        self.motors_history: Dict[int, deque] = {}
         
         # logger.info("数据处理器初始化完成")
     
     def set_data_updated_callback(self, callback):
         """设置数据更新回调函数"""
         self.on_data_updated = callback
+    
+    def _append_history(self, motor_id, motor_data):
+        """添加数据到历史记录"""
+        if motor_id not in self.motors_history:
+            self.motors_history[motor_id] = deque(maxlen=20)
+        # 存储副本，避免后续被覆盖
+        self.motors_history[motor_id].append(copy.deepcopy(motor_data))
     
     def process_websocket_message(self, message: Dict[str, Any]) -> Optional[List[MotorData]]:
         """处理WebSocket消息"""
@@ -132,6 +143,8 @@ class DataProcessor:
                     motor.last_update = datetime.now()
                 
                 updated_motors.append(motor)
+                # 新增：追加历史
+                self._append_history(motor_id, motor)
             
             # 触发数据更新回调
             if self.on_data_updated and updated_motors:
@@ -246,6 +259,8 @@ class DataProcessor:
                     motor.last_update = datetime.now()
                 
                 updated_motors.append(motor)
+                # 新增：追加历史
+                self._append_history(motor_id, motor)
             
             # 触发数据更新回调
             if self.on_data_updated and updated_motors:
@@ -357,6 +372,8 @@ class DataProcessor:
                     motor.last_update = datetime.now()
                 
                 updated_motors.append(motor)
+                # 新增：追加历史
+                self._append_history(motor_id, motor)
                 # # logger.info(f"更新电机 {motor_id} 数据 (latest_data)")
             
             # 触发数据更新回调
@@ -385,6 +402,12 @@ class DataProcessor:
     def get_motor_data(self, motor_id: int) -> Optional[MotorData]:
         """获取指定电机的数据"""
         return self.motors_data.get(motor_id)
+    
+    def get_motor_history(self, motor_id: int, n: int = 20):
+        """获取指定电机最近n条历史数据"""
+        if motor_id in self.motors_history:
+            return list(self.motors_history[motor_id])[-n:]
+        return []
     
     def get_all_motors_data(self) -> List[MotorData]:
         """获取所有电机数据"""

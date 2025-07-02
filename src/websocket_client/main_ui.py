@@ -44,9 +44,10 @@ class WebSocketClientUI:
         # db_config = self.config.get_database_config()
         # self.db_manager = DatabaseManager(db_config.get("path"))
         
-        # 消息队列，用于异步处理WebSocket消息
-        self.message_queue = queue.Queue()
-        self.message_processing = False
+        # 简化的数据通信队列
+        self.ui_update_queue = queue.Queue()
+        self.data_thread = None
+        self.data_thread_running = False
         
         # UI组件
         self.top_menu = None
@@ -63,8 +64,8 @@ class WebSocketClientUI:
         # 设置回调函数
         self.setup_callbacks()
         
-        # 启动消息处理线程
-        self.start_message_processor()
+        # 启动UI更新循环
+        self.start_ui_update_loop()
     
     def init_ui(self):
         """初始化UI界面"""
@@ -110,14 +111,14 @@ class WebSocketClientUI:
         
         # 创建电机分组页面（初始为空，连接后动态创建）
         self.motor_container = self.motor_notebook
+        
+        # 绑定tab切换事件
+        self.motor_notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
     
     def setup_callbacks(self):
         """设置回调函数"""
         # 数据处理器回调
         self.data_processor.set_data_updated_callback(self.on_data_updated)
-        
-        # WebSocket客户端回调 - 在创建客户端时设置
-        # 注意：这里不设置，因为在connect_to_websocket中设置
     
     def connect_to_websocket(self, host: str, port: int):
         """连接到WebSocket服务器"""
@@ -131,8 +132,8 @@ class WebSocketClientUI:
                 import time
                 time.sleep(1)
             
-            # 重新启动消息处理线程
-            self.start_message_processor()
+            # 启动数据处理线程
+            self.start_data_thread()
             
             # 创建WebSocket客户端
             self.websocket_client = WebSocketClient(host, port)
@@ -153,6 +154,93 @@ class WebSocketClientUI:
         except Exception as e:
             logger.error(f"连接WebSocket失败: {str(e)}")
             self.top_menu.show_error_message(f"连接失败: {str(e)}")
+    
+    def start_data_thread(self):
+        """启动数据处理线程"""
+        if self.data_thread_running:
+            return
+            
+        self.data_thread_running = True
+        
+        def data_processing_loop():
+            """数据处理主循环"""
+            while self.data_thread_running:
+                try:
+                    # 简化处理逻辑，避免复杂的检查
+                    time.sleep(0.1)  # 100ms检查一次
+                    
+                except Exception as e:
+                    logger.error(f"数据处理线程错误: {str(e)}")
+                    time.sleep(1)  # 出错时等待1秒
+        
+        self.data_thread = threading.Thread(target=data_processing_loop, daemon=True)
+        self.data_thread.start()
+    
+    def stop_data_thread(self):
+        """停止数据处理线程"""
+        self.data_thread_running = False
+        if self.data_thread:
+            self.data_thread.join(timeout=2)
+    
+    def start_ui_update_loop(self):
+        """启动UI更新循环"""
+        def ui_update_loop():
+            try:
+                # 检查UI更新队列
+                while True:
+                    try:
+                        updated_motors = self.ui_update_queue.get_nowait()
+                        self.update_current_tab_only(updated_motors)
+                    except queue.Empty:
+                        break
+            except Exception as e:
+                logger.error(f"UI更新循环错误: {str(e)}")
+            
+            # 继续循环
+            self.root.after(50, ui_update_loop)
+        
+        # 启动UI更新循环
+        self.root.after(50, ui_update_loop)
+    
+    def update_current_tab_only(self, motors: List[MotorData]):
+        """只更新当前激活的tab"""
+        try:
+            if not motors:
+                return
+                
+            # 获取当前激活的tab
+            current_tab = self.motor_notebook.index(self.motor_notebook.select())
+            tab_text = self.motor_notebook.tab(current_tab, 'text')
+            
+            # 解析tab文本，获取电机ID范围
+            if not tab_text.startswith("电机 ") or "-" not in tab_text:
+                return
+                
+            start, end = tab_text.replace("电机 ", "").split("-")
+            start_id, end_id = int(start), int(end)
+            motor_ids = range(start_id, end_id + 1)
+            
+            # 只更新当前tab下的电机
+            updated_count = 0
+            for motor_data in motors:
+                if motor_data.motor_id in motor_ids:
+                    # 更新数据显示
+                    if motor_data.motor_id in self.motor_displays:
+                        self.motor_displays[motor_data.motor_id].update_motor_values(motor_data)
+                        updated_count += 1
+                    
+                    # 更新图表显示
+                    if motor_data.motor_id in self.motor_charts:
+                        self.motor_charts[motor_data.motor_id].add_chart_data_point(
+                            motor_data.last_update, 
+                            motor_data.excitation_current_ratio * 100
+                        )
+            
+            if updated_count > 0:
+                logger.debug(f"更新当前tab电机显示，成功更新 {updated_count} 台电机")
+                
+        except Exception as e:
+            logger.error(f"更新当前tab失败: {str(e)}")
     
     def on_save_config(self):
         """保存配置回调"""
@@ -190,8 +278,8 @@ class WebSocketClientUI:
         try:
             # logger.info("用户请求断开连接")
             
-            # 停止消息处理线程
-            self.stop_message_processor()
+            # 停止数据处理线程
+            self.stop_data_thread()
             
             # 停止WebSocket客户端
             if self.websocket_client:
@@ -241,11 +329,13 @@ class WebSocketClientUI:
         self.root.after(0, lambda: self.top_menu.update_connection_status(False))
     
     def on_websocket_message(self, message: Dict[str, Any]):
-        """WebSocket消息回调"""
+        """WebSocket消息回调 - 直接处理数据"""
         try:
-            # 将消息放入队列，由后台线程处理
-            self.message_queue.put(message)
-            logger.debug("消息已加入处理队列")
+            # 直接处理数据，不放入队列
+            updated_motors = self.data_processor.process_websocket_message(message)
+            if updated_motors:
+                # 将更新放入UI队列
+                self.ui_update_queue.put(updated_motors)
                 
         except Exception as e:
             logger.error(f"WebSocket消息处理失败: {str(e)}")
@@ -256,35 +346,9 @@ class WebSocketClientUI:
         self.root.after(0, lambda: self.top_menu.show_error_message(f"连接错误: {error}"))
     
     def on_data_updated(self, motors: List[MotorData]):
-        """数据更新回调"""
-        try:
-            # # logger.info(f"数据更新回调被触发，电机数量: {len(motors)}")
-            
-            # 记录每个电机的详细信息（减少日志输出）
-            for motor in motors:
-                logger.debug(f"电机 {motor.motor_id}: 时间={motor.last_update}, 比值={motor.excitation_current_ratio}")
-            
-            # 在后台线程中保存数据库，避免阻塞UI
-            # def save_data_async():
-            #     try:
-            #         self.db_manager.save_all_motors_data(motors)
-            #         logger.debug("数据已保存到数据库")
-            #     except Exception as e:
-            #         logger.error(f"保存数据到数据库失败: {str(e)}")
-            
-            # # 启动后台线程保存数据
-            # import threading
-            # save_thread = threading.Thread(target=save_data_async, daemon=True)
-            # save_thread.start()
-            
-            # 立即更新UI显示（使用after_idle避免阻塞）
-            self.root.after_idle(lambda: self.update_motor_displays(motors))
-            logger.debug("UI更新已安排")
-            
-        except Exception as e:
-            logger.error(f"更新数据显示失败: {str(e)}")
-            import traceback
-            logger.error(f"详细错误: {traceback.format_exc()}")
+        """数据更新回调 - 不再使用"""
+        # 这个回调现在由on_websocket_message直接处理
+        pass
     
     def start_monitoring(self):
         """开始监控"""
@@ -293,34 +357,6 @@ class WebSocketClientUI:
         
         self.is_monitoring = True
         # # logger.info("开始监控电机数据")
-    
-    def update_motor_displays(self, motors: List[MotorData]):
-        """更新电机显示"""
-        try:
-            logger.debug(f"开始更新电机显示，电机数量: {len(motors)}")
-            
-            updated_count = 0
-            for motor_data in motors:
-                motor_id = motor_data.motor_id
-                
-                # 更新数据显示
-                if motor_id in self.motor_displays:
-                    self.motor_displays[motor_id].update_motor_values(motor_data)
-                    updated_count += 1
-                
-                # 更新图表显示
-                if motor_id in self.motor_charts:
-                    self.motor_charts[motor_id].add_chart_data_point(
-                        motor_data.last_update, 
-                        motor_data.excitation_current_ratio * 100
-                    )
-            
-            logger.debug(f"电机显示更新完成，成功更新 {updated_count} 台电机")
-            
-        except Exception as e:
-            logger.error(f"更新电机显示失败: {str(e)}")
-            import traceback
-            logger.error(f"详细错误: {traceback.format_exc()}")
     
     def create_all_motor_components(self):
         """创建所有电机的UI组件"""
@@ -423,6 +459,37 @@ class WebSocketClientUI:
             logger.error(f"创建电机 {motor_id} 显示组件失败: {str(e)}")
             import traceback
             logger.error(f"详细错误: {traceback.format_exc()}")
+    
+    def on_tab_changed(self, event):
+        """tab切换时刷新最近20条数据"""
+        try:
+            current_tab = event.widget.index(event.widget.select())
+            tab_text = event.widget.tab(current_tab, 'text')
+            
+            if tab_text.startswith("电机 ") and "-" in tab_text:
+                start, end = tab_text.replace("电机 ", "").split("-")
+                start_id, end_id = int(start), int(end)
+                motor_ids = range(start_id, end_id + 1)
+                
+                # 获取最近20条数据并刷新显示
+                for motor_id in motor_ids:
+                    motor_data = self.data_processor.get_motor_data(motor_id)
+                    if motor_data and motor_id in self.motor_displays:
+                        # 刷新数据显示
+                        self.motor_displays[motor_id].update_motor_values(motor_data)
+                    
+                    # 刷新图表显示
+                    if motor_id in self.motor_charts:
+                        history_data = self.data_processor.get_motor_history(motor_id, 20)
+                        if history_data:
+                            # 使用set_data_history方法刷新图表
+                            self.motor_charts[motor_id].set_data_history(history_data)
+                            
+        except Exception as e:
+            logger.error(f"tab切换刷新数据失败: {str(e)}")
+            import traceback
+            logger.error(f"详细错误: {traceback.format_exc()}")
+    
     def run(self):
         """运行主程序"""
         try:
@@ -433,53 +500,9 @@ class WebSocketClientUI:
             logger.error(f"运行UI失败: {str(e)}")
         finally:
             # 清理资源
-            self.stop_message_processor()
+            self.stop_data_thread()
             if self.websocket_client:
                 self.websocket_client.stop()
-    
-    def start_message_processor(self):
-        """启动消息处理线程"""
-        def process_messages():
-            while True:
-                try:
-                    # 从队列中获取消息，设置超时避免无限等待
-                    message = self.message_queue.get(timeout=1.0)
-                    if message is None:  # 停止信号
-                        break
-                    
-                    # 处理消息
-                    self.process_message_sync(message)
-                    
-                except queue.Empty:
-                    continue
-                except Exception as e:
-                    logger.error(f"消息处理线程错误: {str(e)}")
-        
-        self.message_processing = True
-        message_thread = threading.Thread(target=process_messages, daemon=True)
-        message_thread.start()
-        # logger.info("消息处理线程已启动")
-    
-    def process_message_sync(self, message: Dict[str, Any]):
-        """同步处理消息"""
-        try:
-            updated_motors = self.data_processor.process_websocket_message(message)
-            
-            if updated_motors:
-                # # logger.info(f"处理消息完成，电机数量: {len(updated_motors)}")
-                # 在主线程中触发UI更新
-                self.root.after(0, lambda: self.on_data_updated(updated_motors))
-            else:
-                logger.debug("处理消息但无电机数据更新")
-                
-        except Exception as e:
-            logger.error(f"处理WebSocket消息失败: {str(e)}")
-    
-    def stop_message_processor(self):
-        """停止消息处理线程"""
-        self.message_processing = False
-        self.message_queue.put(None)  # 发送停止信号
-        # logger.info("消息处理线程已停止")
 
 def main():
     """主函数"""
