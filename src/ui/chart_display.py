@@ -7,7 +7,6 @@ import matplotlib.dates as mdates
 import numpy as np
 from datetime import datetime, timedelta
 from scipy.interpolate import make_interp_spline
-from db.database import DatabaseManager
 import logging
 import matplotlib
 import sys
@@ -25,11 +24,6 @@ class MotorChartDisplay:
         self.parent = parent
         self.motor_id = motor_id
         
-        # 使用脚本目录初始化数据库
-        script_dir = self._get_script_directory()
-        db_path = os.path.join(script_dir, "motor_data.db")
-        self.db_manager = DatabaseManager(db_path)
-        
         # 图表相关
         self.chart = None
         self.chart_data = {
@@ -39,9 +33,7 @@ class MotorChartDisplay:
         
         # 创建图表界面
         self.create_chart_display()
-        
-        # 初始化图表数据
-        self.load_chart_data()
+        # 数据由外部通过 add_chart_data_point 添加
     
     def _get_script_directory(self):
         """获取启动脚本的目录"""
@@ -137,43 +129,6 @@ class MotorChartDisplay:
             'canvas': canvas,
             'line': None
         }
-    
-    def load_chart_data(self):
-        """从数据库加载图表数据"""
-        try:
-            # 获取最近的数据（默认1小时内的数据）
-            end_time = datetime.now()
-            start_time = end_time - timedelta(hours=1)
-            data = self.db_manager.get_data_by_time_range(self.motor_id, start_time, end_time)
-            
-            # 处理数据
-            timestamps = []
-            ratios = []
-            for row in data:
-                if row[13] is not None:  # 检查excitation_current_ratio是否为None
-                    ratio = row[13] * 100  # excitation_current_ratio * 100
-                    # 验证数据有效性
-                    if not (np.isnan(ratio) or np.isinf(ratio)):
-                        timestamps.append(datetime.fromisoformat(row[2]))
-                        ratios.append(ratio)
-            
-            # 限制数据点数量为20个（保留最新的20个）
-            if len(timestamps) > 20:
-                timestamps = timestamps[-20:]
-                ratios = ratios[-20:]
-            
-            # 更新图表数据
-            self.chart_data['timestamps'] = timestamps
-            self.chart_data['ratios'] = ratios
-            
-            # 更新图表显示
-            self.update_chart_display()
-            
-        except Exception as e:
-            # logger.error(f"加载电机{self.motor_id}图表数据失败: {str(e)}")
-            # 初始化空数据
-            self.chart_data['timestamps'] = []
-            self.chart_data['ratios'] = []
     
     def update_chart_display(self):
         """更新图表显示"""

@@ -28,6 +28,8 @@ class MotorData:
     calculated_excitation_current: float = 0.0
     excitation_current_ratio: float = 0.0
     last_update: datetime = None
+    # 递推均值
+    average_excitation_current_ratio: float = 0.0
     
     def to_dict(self):
         """转换为字典格式"""
@@ -44,6 +46,7 @@ class MotorData:
             'excitation_current': self.excitation_current,
             'calculated_excitation_current': self.calculated_excitation_current,
             'excitation_current_ratio': self.excitation_current_ratio,
+            'average_excitation_current_ratio': self.average_excitation_current_ratio,
             'last_update': self.last_update.isoformat() if self.last_update else None
         }
 
@@ -169,25 +172,23 @@ class DataProcessor:
     def process_motor_data(self, raw_data: List[int]) -> List[MotorData]:
         """
         处理Modbus原始数据，转换为电机数据对象列表
-        
-        Args:
-            raw_data: Modbus寄存器原始数据列表
-            
-        Returns:
-            电机数据对象列表
         """
         try:
             if not raw_data:
                 logger.warning("收到空的原始数据")
                 return []
-            
             # 使用新的解析方法
             success = self.parse_motor_data(raw_data)
             if success:
+                # 递推均值：每次新值到来时，均值 = (上一次均值 + 新值) / 2
+                for m in self.motors:
+                    if m.average_excitation_current_ratio == 0.0:
+                        m.average_excitation_current_ratio = m.excitation_current_ratio
+                    else:
+                        m.average_excitation_current_ratio = (m.average_excitation_current_ratio + m.excitation_current_ratio) / 2
                 return self.motors.copy()
             else:
                 return []
-            
         except Exception as e:
             logger.error(f"处理电机数据失败: {str(e)}")
             return []

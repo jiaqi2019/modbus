@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from modbus_client import ModbusClient
 from websocket_server.websocket_server import WebSocketServer
-from db.database import DatabaseManager
+# from db.database import DatabaseManager
 from ui.data_display import MotorDataDisplay
 from ui.chart_display import MotorChartDisplay
 from ui.top_menu import TopMenu
@@ -125,9 +125,6 @@ class MainUI:
         
         # 创建电机显示页面
         self.create_motor_display_page()
-        
-        # 创建系统信息页面
-        self.create_system_info_page()
     
     def create_motor_display_page(self):
         """创建电机显示页面"""
@@ -145,27 +142,13 @@ class MainUI:
         # 创建电机分组页面（初始为空，连接后动态创建）
         self.motor_container = self.motor_notebook
     
-    def create_system_info_page(self):
-        """创建系统信息页面"""
-        info_frame = ttk.Notebook(self.notebook)
-        self.notebook.add(info_frame, text="系统信息")
-        
-        # 系统信息显示
-        info_text = tk.Text(info_frame, wrap='word', height=20)
-        info_text.pack(fill='both', expand=True, padx=10, pady=10)
-        
-        self.info_text = info_text
-        
-        # 更新系统信息
-        self.update_system_info()
-    
     def initialize_system(self):
         """初始化系统组件"""
         try:
             # 初始化数据库 - 使用脚本目录
             script_dir = self._get_script_directory()
             db_path = os.path.join(script_dir, "motor_data.db")
-            self.db_manager = DatabaseManager(db_path)
+            # self.db_manager = DatabaseManager(db_path)
             # logger.info(f"数据库初始化完成: {db_path}")
             
             # 初始化数据处理器
@@ -334,7 +317,7 @@ class MainUI:
                 chart_frame.pack(side='left', fill='both', expand=True, padx=(0, 5))
 
                 # 右侧数据区域 - 20%
-                data_frame = ttk.Frame(left_right_frame, width=200)
+                data_frame = ttk.Frame(left_right_frame, width=300)
                 data_frame.pack(side='right', fill='y', padx=(5, 0))
                 data_frame.pack_propagate(False)  # 固定宽度
 
@@ -404,8 +387,8 @@ class MainUI:
                         broadcast_thread.start()
                     
                     # 步骤4: 保存到数据库
-                    if self.db_manager:
-                        self.db_manager.save_all_motors_data(motors_data)
+                    # if self.db_manager:
+                    #     self.db_manager.save_all_motors_data(motors_data)
                     
                     # 步骤5: 更新UI显示
                     self.root.after(0, self.update_motor_displays, motors_data)
@@ -498,64 +481,14 @@ class MainUI:
         else:
             self.connection_status.update_status(False)
     
-    def update_system_info(self):
-        """更新系统信息"""
-        try:
-            # 更新WebSocket客户端数量
-            if self.websocket_server:
-                client_count = self.websocket_server.get_client_count()
-                self.connection_status.update_websocket_client_count(client_count)
-            
-            info = f"""
-系统信息:
-========
-
-数据库路径: {self.db_manager.db_path if self.db_manager else '未初始化'}
-
-Modbus配置:
-- 主机: {self.config['modbus']['host']}
-- 端口: {self.config['modbus']['port']}
-- 电机数量: {self.config['modbus']['motor_count']}
-
-更新配置:
-- 自动更新: {'启用' if self.config['auto_update']['enabled'] else '禁用'}
-- 更新间隔: {self.config['auto_update']['interval']} 秒
-
-WebSocket服务器:
-- 主机: {self.config['websocket']['host']}
-- 端口: {self.config['websocket']['port']}
-- 状态: {'运行中' if self.websocket_server else '未启动'}
-- 客户端数量: {self.websocket_server.get_client_count() if self.websocket_server else 0}
-
-连接状态:
-- Modbus: {'已连接' if self.is_connected else '未连接'}
-- 监控状态: {'运行中' if self.is_monitoring else '已停止'}
-
-最后更新: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-            """
-            
-            self.info_text.delete(1.0, tk.END)
-            self.info_text.insert(1.0, info)
-            
-        except Exception as e:
-            logger.error(f"更新系统信息失败: {str(e)}")
-    
     def get_latest_motors_data(self):
         """获取最新电机数据（供WebSocket服务器使用）"""
         return self.latest_motors_data
     
     def run(self):
         """运行主UI"""
-        # 定期更新系统信息
-        def update_info():
-            self.update_system_info()
-            self.root.after(5000, update_info)  # 每5秒更新一次
-        
-        update_info()
-        
         # 运行主循环
         self.root.mainloop()
-        
         # 清理资源
         self.cleanup()
     

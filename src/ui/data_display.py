@@ -24,11 +24,11 @@ class MotorDataDisplay:
             font=('Microsoft YaHei', 10, 'bold'),
             foreground='#2E86AB'
         )
-        title_label.pack(pady=(0, 5))
+        title_label.pack(pady=(0, 1))
 
         # 创建数据容器 - 水平布局
         data_container = ttk.Frame(self.parent)
-        data_container.pack(fill='x', expand=True)
+        data_container.pack(fill='x', expand=False)
 
         # 定义数据项 - 使用水平布局
         data_items = [
@@ -41,7 +41,9 @@ class MotorDataDisplay:
             ("线电压", "line_voltage", "kV"),
             ("励磁电压", "excitation_voltage", "V"),
             ("励磁电流", "excitation_current", "A"),
-            ("计算励磁电流", "calculated_excitation_current", "A")
+            ("计算励磁电流", "calculated_excitation_current", "A"),
+            # 恶搞：把故障判断值也加进来
+            ("故障判断值", "excitation_current_ratio", "%")
         ]
 
         # 创建数据行 - 每行显示5个数据项
@@ -53,39 +55,28 @@ class MotorDataDisplay:
                     item = data_items[i + j]
                     self._create_data_item_horizontal(row_frame, item)
 
-        # 创建分隔线
-        separator = ttk.Separator(self.parent, orient='horizontal')
-        separator.pack(fill='x', pady=5)
-
-        # 故障判断值 - 使用更醒目的样式
-        ratio_frame = ttk.Frame(self.parent)
-        ratio_frame.pack(fill='x', pady=2)
-        ratio_title = ttk.Label(
-            ratio_frame,
-            text="故障判断值:",
-            font=('Microsoft YaHei', 9, 'bold'),
-            foreground='#2E86AB'
+        # 均值 - 居中放大显示，紧跟data_items下方
+        avg_ratio_frame = ttk.Frame(self.parent)
+        avg_ratio_frame.pack(pady= 30)
+        avg_ratio_title = ttk.Label(
+            avg_ratio_frame,
+            text="均值:",
+            font=('Microsoft YaHei', 16, 'bold'),
+            foreground='#1ABC9C',
+            anchor='center',
+            justify='center'
         )
-        ratio_title.pack(side='left', padx=(0, 10))
-        self.ratio_value = ttk.Label(
-            ratio_frame,
+        avg_ratio_title.pack(side='top')
+        self.avg_ratio_value = ttk.Label(
+            avg_ratio_frame,
             text="0.00%",
-            font=('Microsoft YaHei', 12, 'bold'),
-            foreground='green'
+            font=('Microsoft YaHei', 22, 'bold'),
+            foreground='#1ABC9C',
+            anchor='center',
+            justify='center'
         )
-        self.ratio_value.pack(side='left')
-        self.value_labels[f"motor{self.motor_id}_excitation_current_ratio"] = self.ratio_value
-
-        # 警告信息
-        self.warning_label = ttk.Label(
-            self.parent,
-            text="",
-            font=('Microsoft YaHei', 9, 'bold'),
-            foreground='red',
-            wraplength=400
-        )
-        self.warning_label.pack(pady=2)
-        self.value_labels[f"motor{self.motor_id}_excitation_current_ratio_warning"] = self.warning_label
+        self.avg_ratio_value.pack(side='left', padx=(8, 0))
+        self.value_labels[f"motor{self.motor_id}_average_excitation_current_ratio"] = self.avg_ratio_value
     
     def _create_data_item_horizontal(self, parent, item):
         """创建单个数据项 - 水平布局"""
@@ -123,7 +114,11 @@ class MotorDataDisplay:
         unit_label.pack(anchor='w')
         
         # 存储值标签引用
-        self.value_labels[f"motor{self.motor_id}_{attr_name}"] = value_label
+        # 对于excitation_current_ratio，key要和data_items区分
+        if attr_name == "excitation_current_ratio":
+            self.value_labels[f"motor{self.motor_id}_excitation_current_ratio"] = value_label
+        else:
+            self.value_labels[f"motor{self.motor_id}_{attr_name}"] = value_label
     
     def format_current_value(self, value):
         """格式化电流值，小于10时乘以1000"""
@@ -165,15 +160,20 @@ class MotorDataDisplay:
             self.value_labels[label_key].config(text=calculated_current)
             logger.debug(f"更新 {label_key}: {calculated_current}")
         
-        # 更新故障判断值
+        # 更新故障判断值（大号标签）
         ratio = motor_data.excitation_current_ratio * 100
         ratio_text = f"{ratio:.2f}%"
-        label = self.value_labels[f"motor{self.motor_id}_excitation_current_ratio"]
-        warning_label = self.value_labels[f"motor{self.motor_id}_excitation_current_ratio_warning"]
-        
-        if abs(ratio) > 5:
-            label.config(text=ratio_text, foreground="red")
-            warning_label.config(text="励磁电流偏差过大！", foreground="red")
-        else:
-            label.config(text=ratio_text, foreground="green")
-            warning_label.config(text="")
+        dataitem_ratio_label = self.value_labels.get(f"motor{self.motor_id}_excitation_current_ratio")
+        if dataitem_ratio_label:
+            if abs(ratio) > 5:
+                dataitem_ratio_label.config(text=ratio_text, foreground="red")
+            else:
+                dataitem_ratio_label.config(text=ratio_text, foreground="green")
+        # 新增：更新均值显示
+        avg_ratio = getattr(motor_data, 'average_excitation_current_ratio', None)
+        if avg_ratio is None:
+            avg_ratio = 0.0
+        avg_ratio_text = f"{avg_ratio * 100:.2f}%"
+        avg_label = self.value_labels.get(f"motor{self.motor_id}_average_excitation_current_ratio")
+        if avg_label:
+            avg_label.config(text=avg_ratio_text)
