@@ -30,11 +30,16 @@ class WebSocketServer:
         self.data_source = data_source  # 数据源
         self.running = False
         self.server = None
+        self.on_client_count_changed = None  # 客户端数量变化回调
         
     async def register(self, websocket):
         """注册新的WebSocket客户端"""
         self.clients.add(websocket)
         # logger.info(f"客户端连接，当前连接数: {len(self.clients)}")
+        
+        # 通知客户端数量变化
+        if self.on_client_count_changed:
+            self.on_client_count_changed(len(self.clients))
         
         # 发送当前所有电机的最新数据
         await self.send_latest_data_to_client(websocket)
@@ -43,6 +48,10 @@ class WebSocketServer:
         """注销WebSocket客户端"""
         self.clients.discard(websocket)
         # logger.info(f"客户端断开，当前连接数: {len(self.clients)}")
+        
+        # 通知客户端数量变化
+        if self.on_client_count_changed:
+            self.on_client_count_changed(len(self.clients))
     
     async def send_latest_data_to_client(self, websocket):
         """向指定客户端发送最新数据"""
@@ -341,4 +350,8 @@ class WebSocketServer:
     
     def get_client_count(self):
         """获取当前连接的客户端数量"""
-        return len(self.clients) 
+        return len(self.clients)
+    
+    def set_client_count_changed_callback(self, callback):
+        """设置客户端数量变化回调函数"""
+        self.on_client_count_changed = callback 

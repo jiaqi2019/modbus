@@ -160,6 +160,10 @@ class MainUI:
             ws_host = self.config['websocket']['host']
             ws_port = self.config['websocket']['port']
             self.websocket_server = WebSocketServer(self, host=ws_host, port=ws_port)
+            
+            # 设置客户端数量变化回调
+            self.websocket_server.set_client_count_changed_callback(self.on_websocket_client_count_changed)
+            
             self.websocket_server.start()
             # logger.info(f"WebSocket服务器启动完成 - {ws_host}:{ws_port}")
             
@@ -480,6 +484,13 @@ class MainUI:
                 self.connection_status.update_status(True, info)
         else:
             self.connection_status.update_status(False)
+    
+
+    
+    def on_websocket_client_count_changed(self, count):
+        """WebSocket客户端数量变化回调"""
+        # 使用after确保在主线程中更新UI
+        self.root.after(0, lambda: self.connection_status.update_websocket_client_count(count))
     
     def get_latest_motors_data(self):
         """获取最新电机数据（供WebSocket服务器使用）"""
