@@ -202,6 +202,9 @@ class WebSocketClientUI:
             self.is_connected = False
             self.is_monitoring = False
             
+            # 清理UI组件
+            self.clear_motor_components()
+            
             # 更新UI状态
             self.root.after(0, lambda: self.top_menu.update_connection_status(False))
             
@@ -219,6 +222,9 @@ class WebSocketClientUI:
         # 更新UI状态
         self.root.after(0, lambda: self.top_menu.update_connection_status(True))
         
+        # 创建所有电机的UI组件
+        self.create_all_motor_components()
+        
         # 开始监控
         self.start_monitoring()
     
@@ -227,6 +233,9 @@ class WebSocketClientUI:
         # logger.info("WebSocket连接断开")
         self.is_connected = False
         self.is_monitoring = False
+        
+        # 清理UI组件
+        self.root.after(0, lambda: self.clear_motor_components())
         
         # 更新UI状态
         self.root.after(0, lambda: self.top_menu.update_connection_status(False))
@@ -267,28 +276,6 @@ class WebSocketClientUI:
             # import threading
             # save_thread = threading.Thread(target=save_data_async, daemon=True)
             # save_thread.start()
-            
-            # 批量检查并创建缺失的显示组件
-            missing_components = []
-            for motor in motors:
-                motor_id = motor.motor_id
-                if motor_id not in self.motor_displays:
-                    missing_components.append(motor_id)
-            
-            # 如果有缺失的组件，批量创建
-            if missing_components:
-                def create_components_async():
-                    try:
-                        for motor_id in missing_components:
-                            # # logger.info(f"创建电机 {motor_id} 显示组件")
-                            # 在主线程中创建UI组件
-                            self.root.after(0, lambda mid=motor_id: self.create_motor_displays_for_motor(mid))
-                    except Exception as e:
-                        logger.error(f"创建显示组件失败: {str(e)}")
-                
-                # 启动后台线程检查组件
-                component_thread = threading.Thread(target=create_components_async, daemon=True)
-                component_thread.start()
             
             # 立即更新UI显示（使用after_idle避免阻塞）
             self.root.after_idle(lambda: self.update_motor_displays(motors))
@@ -332,6 +319,40 @@ class WebSocketClientUI:
             
         except Exception as e:
             logger.error(f"更新电机显示失败: {str(e)}")
+            import traceback
+            logger.error(f"详细错误: {traceback.format_exc()}")
+    
+    def create_all_motor_components(self):
+        """创建所有电机的UI组件"""
+        try:
+            # 创建12个电机的UI组件（根据calc目录的文件数量）
+            motor_ids = list(range(1, 13))  # 电机1-12
+            
+            for motor_id in motor_ids:
+                self.create_motor_displays_for_motor(motor_id)
+            
+            logger.info(f"已创建所有电机UI组件，共 {len(motor_ids)} 台电机")
+            
+        except Exception as e:
+            logger.error(f"创建所有电机UI组件失败: {str(e)}")
+            import traceback
+            logger.error(f"详细错误: {traceback.format_exc()}")
+    
+    def clear_motor_components(self):
+        """清理所有电机UI组件"""
+        try:
+            # 清空电机显示和图表组件字典
+            self.motor_displays.clear()
+            self.motor_charts.clear()
+            
+            # 清空notebook中的所有页面
+            for i in range(self.motor_notebook.index('end') - 1, -1, -1):
+                self.motor_notebook.forget(i)
+            
+            logger.info("已清理所有电机UI组件")
+            
+        except Exception as e:
+            logger.error(f"清理电机UI组件失败: {str(e)}")
             import traceback
             logger.error(f"详细错误: {traceback.format_exc()}")
     
