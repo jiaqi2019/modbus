@@ -17,7 +17,7 @@ from config import WebSocketConfig
 from websocket_client import WebSocketClient
 from data_processor import DataProcessor, MotorData
 from top_menu import WebSocketTopMenu
-from db.database import DatabaseManager
+# from db.database import DatabaseManager
 from ui.data_display import MotorDataDisplay
 from ui.chart_display import MotorChartDisplay
 
@@ -41,8 +41,8 @@ class WebSocketClientUI:
         self.data_processor = DataProcessor()
         
         # 使用配置中的数据库路径
-        db_config = self.config.get_database_config()
-        self.db_manager = DatabaseManager(db_config.get("path"))
+        # db_config = self.config.get_database_config()
+        # self.db_manager = DatabaseManager(db_config.get("path"))
         
         # 消息队列，用于异步处理WebSocket消息
         self.message_queue = queue.Queue()
@@ -94,9 +94,6 @@ class WebSocketClientUI:
         
         # 创建电机显示页面
         self.create_motor_display_page()
-        
-        # 创建系统信息页面
-        self.create_system_info_page()
     
     def create_motor_display_page(self):
         """创建电机显示页面"""
@@ -113,49 +110,6 @@ class WebSocketClientUI:
         
         # 创建电机分组页面（初始为空，连接后动态创建）
         self.motor_container = self.motor_notebook
-    
-    def create_system_info_page(self):
-        """创建系统信息页面"""
-        info_frame = ttk.Frame(self.notebook)
-        self.notebook.add(info_frame, text="系统信息")
-        
-        # 系统信息显示
-        info_text = tk.Text(info_frame, wrap='word', height=20)
-        info_text.pack(fill='both', expand=True, padx=10, pady=10)
-        
-        self.info_text = info_text
-        
-        # 更新系统信息
-        self.update_system_info()
-    
-    def update_system_info(self):
-        """更新系统信息"""
-        try:
-            info = f"""
-系统信息:
-========
-
-数据库路径: {self.db_manager.db_path if self.db_manager else '未初始化'}
-
-WebSocket配置:
-- 主机: {self.config.get_websocket_config()['host']}
-- 端口: {self.config.get_websocket_config()['port']}
-
-连接状态:
-- WebSocket: {'已连接' if self.is_connected else '未连接'}
-- 监控状态: {'运行中' if self.is_monitoring else '已停止'}
-
-电机数据:
-- 已显示电机数量: {len(self.motor_displays)}
-
-最后更新: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-            """
-            
-            self.info_text.delete(1.0, tk.END)
-            self.info_text.insert(1.0, info)
-            
-        except Exception as e:
-            logger.error(f"更新系统信息失败: {str(e)}")
     
     def setup_callbacks(self):
         """设置回调函数"""
@@ -302,17 +256,17 @@ WebSocket配置:
                 logger.debug(f"电机 {motor.motor_id}: 时间={motor.last_update}, 比值={motor.excitation_current_ratio}")
             
             # 在后台线程中保存数据库，避免阻塞UI
-            def save_data_async():
-                try:
-                    self.db_manager.save_all_motors_data(motors)
-                    logger.debug("数据已保存到数据库")
-                except Exception as e:
-                    logger.error(f"保存数据到数据库失败: {str(e)}")
+            # def save_data_async():
+            #     try:
+            #         self.db_manager.save_all_motors_data(motors)
+            #         logger.debug("数据已保存到数据库")
+            #     except Exception as e:
+            #         logger.error(f"保存数据到数据库失败: {str(e)}")
             
-            # 启动后台线程保存数据
-            import threading
-            save_thread = threading.Thread(target=save_data_async, daemon=True)
-            save_thread.start()
+            # # 启动后台线程保存数据
+            # import threading
+            # save_thread = threading.Thread(target=save_data_async, daemon=True)
+            # save_thread.start()
             
             # 批量检查并创建缺失的显示组件
             missing_components = []
@@ -452,13 +406,6 @@ WebSocket配置:
         """运行主程序"""
         try:
             # logger.info("启动WebSocket客户端UI")
-            
-            # 定期更新系统信息
-            def update_info():
-                self.update_system_info()
-                self.root.after(5000, update_info)  # 每5秒更新一次
-            
-            update_info()
             
             self.root.mainloop()
         except Exception as e:

@@ -21,6 +21,7 @@ class MotorData:
     excitation_current: float = 0.0
     calculated_excitation_current: float = 0.0
     excitation_current_ratio: float = 0.0
+    average_excitation_current_ratio: float = 0.0
     last_update: Optional[datetime] = None
     
     def to_dict(self):
@@ -38,6 +39,7 @@ class MotorData:
             'excitation_current': self.excitation_current,
             'calculated_excitation_current': self.calculated_excitation_current,
             'excitation_current_ratio': self.excitation_current_ratio,
+            'average_excitation_current_ratio': self.average_excitation_current_ratio,
             'last_update': self.last_update.isoformat() if self.last_update else None
         }
 
@@ -111,6 +113,8 @@ class DataProcessor:
                 motor.excitation_voltage = motor_data.get("excitation_voltage", 0.0)
                 motor.excitation_current = motor_data.get("excitation_current", 0.0)
                 motor.calculated_excitation_current = motor_data.get("calculated_excitation_current", 0.0)
+                motor.excitation_current_ratio = motor_data.get("excitation_current_ratio", 0.0)
+                motor.average_excitation_current_ratio = motor_data.get("average_excitation_current_ratio", 0.0)
                 
                 # 使用原始数据中的时间戳，如果没有则使用当前时间
                 if "last_update" in motor_data:
@@ -221,6 +225,7 @@ class DataProcessor:
                     motor.calculated_excitation_current = motor_data.get("calculated_excitation_current", 0.0)
                 if "excitation_current_ratio" in motor_data:
                     motor.excitation_current_ratio = motor_data.get("excitation_current_ratio", 0.0)
+                    motor.average_excitation_current_ratio = motor_data.get("average_excitation_current_ratio", 0.0)
                     logger.debug(f"电机 {motor_id} 接收到比值: {motor.excitation_current_ratio}")
                 else:
                     logger.warning(f"电机 {motor_id} 数据中缺少 excitation_current_ratio 字段")
@@ -331,6 +336,7 @@ class DataProcessor:
                     motor.calculated_excitation_current = motor_data.get("calculated_excitation_current", 0.0)
                 if "excitation_current_ratio" in motor_data:
                     motor.excitation_current_ratio = motor_data.get("excitation_current_ratio", 0.0)
+                    motor.average_excitation_current_ratio = motor_data.get("average_excitation_current_ratio", 0.0)
                     logger.debug(f"电机 {motor_id} 接收到比值: {motor.excitation_current_ratio}")
                 else:
                     logger.warning(f"电机 {motor_id} 数据中缺少 excitation_current_ratio 字段")
