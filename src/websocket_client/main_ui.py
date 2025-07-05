@@ -101,8 +101,11 @@ class WebSocketClientUI:
         motor_frame = ttk.Frame(self.notebook)
         self.notebook.add(motor_frame, text="电机监控")
         
-        # 创建电机分组notebook
-        self.motor_notebook = ttk.Notebook(motor_frame)
+        # 创建可滚动的框架
+        self.create_scrollable_frame(motor_frame)
+        
+        # 创建电机分组notebook（放在可滚动框架内）
+        self.motor_notebook = ttk.Notebook(self.scrollable_frame)
         self.motor_notebook.pack(fill='both', expand=True)
         
         # 存储电机显示组件
@@ -114,6 +117,45 @@ class WebSocketClientUI:
         
         # 绑定tab切换事件
         self.motor_notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
+    
+    def create_scrollable_frame(self, parent):
+        """创建可滚动的框架"""
+        # 创建Canvas和滚动条
+        self.canvas = tk.Canvas(parent, highlightthickness=0)
+        self.v_scrollbar = ttk.Scrollbar(parent, orient="vertical", command=self.canvas.yview)
+        self.scrollable_frame = ttk.Frame(self.canvas)
+        
+        # 配置Canvas
+        self.canvas.configure(yscrollcommand=self.v_scrollbar.set)
+        
+        # 将scrollable_frame放入Canvas
+        self.canvas_frame = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        
+        # 绑定事件
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        )
+        
+        # 绑定鼠标滚轮事件
+        self.canvas.bind("<Configure>", self._on_canvas_configure)
+        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+        
+        # 布局
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.v_scrollbar.pack(side="right", fill="y")
+    
+    def _on_canvas_configure(self, event):
+        """Canvas大小改变时的处理"""
+        # 更新scrollable_frame的宽度以匹配Canvas的宽度
+        canvas_width = event.width
+        self.canvas.itemconfig(self.canvas_frame, width=canvas_width)
+    
+    def _on_mousewheel(self, event):
+        """鼠标滚轮事件处理"""
+        # 只有当鼠标在Canvas区域内时才滚动
+        if self.canvas.winfo_containing(event.x_root, event.y_root) == self.canvas:
+            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
     
     def setup_callbacks(self):
         """设置回调函数"""
@@ -503,6 +545,13 @@ class WebSocketClientUI:
             self.stop_data_thread()
             if self.websocket_client:
                 self.websocket_client.stop()
+            
+            # 解绑鼠标滚轮事件
+            try:
+                if hasattr(self, 'canvas'):
+                    self.canvas.unbind_all("<MouseWheel>")
+            except:
+                pass
 
 def main():
     """主函数"""

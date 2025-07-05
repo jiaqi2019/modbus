@@ -15,7 +15,7 @@ cd "$PROJECT_ROOT"
 
 # 启动WebSocket客户端
 echo "正在启动WebSocket客户端..."
-python3 "$SCRIPT_DIR/run_client.py"
+python3 "$SCRIPT_DIR/main_ui.py"
 
 # 如果启动失败，显示错误信息
 if [ $? -ne 0 ]; then
