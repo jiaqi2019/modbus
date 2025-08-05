@@ -87,7 +87,7 @@ class MotorChartDisplay:
         # 创建标题
         title_label = ttk.Label(
             self.parent, 
-            text=f"电机 {self.motor_id} 故障检测趋势", 
+            text=f"{self.motor_id}号发电机故障检测趋势", 
             font=('Microsoft YaHei', 11, 'bold'),
             foreground='#2E86AB'
         )
@@ -103,9 +103,8 @@ class MotorChartDisplay:
         ax = fig.add_subplot(111)
         
         # 设置图表标题和标签 - 使用中文
-        ax.set_title(f'电机 {self.motor_id} 故障检测比值趋势', fontsize=12, fontweight='bold', pad=10)
+
         ax.set_xlabel('时间', fontsize=10)
-        ax.set_ylabel('故障检测比值 (%)', fontsize=10)
         ax.grid(True, alpha=0.3, linestyle='--')
         
         # 设置图表样式
@@ -157,9 +156,7 @@ class MotorChartDisplay:
             
             if not valid_data:
                 # 没有有效数据，显示空图表
-                chart['ax'].set_title(f'电机 {self.motor_id} 故障检测比值趋势', fontsize=12, fontweight='bold', pad=10)
                 chart['ax'].set_xlabel('时间', fontsize=10)
-                chart['ax'].set_ylabel('故障检测比值 (%)', fontsize=10)
                 chart['ax'].grid(True, alpha=0.3, linestyle='--')
                 chart['ax'].text(0.5, 0.5, '暂无数据', transform=chart['ax'].transAxes, 
                                ha='center', va='center', fontsize=12, color='#999999')
@@ -202,9 +199,8 @@ class MotorChartDisplay:
                 chart['ax'].scatter(timestamps, ratios, c='#2E86AB', s=80, alpha=0.8, edgecolors='white', linewidth=2)
             
             # 设置图表格式
-            chart['ax'].set_title(f'电机 {self.motor_id} 故障检测比值趋势 (最近20个数据点)', fontsize=12, fontweight='bold', pad=10)
+
             chart['ax'].set_xlabel('时间', fontsize=10)
-            chart['ax'].set_ylabel('故障检测比值 (%)', fontsize=10)
             chart['ax'].grid(True, alpha=0.3, linestyle='--', color='#cccccc')
             
             # 格式化x轴时间显示
@@ -230,9 +226,7 @@ class MotorChartDisplay:
                 chart['ax'].axhline(y=-5, color='#FF6B6B', linestyle='--', alpha=0.7, linewidth=1)
         else:
             # 没有数据，显示空图表
-            chart['ax'].set_title(f'电机 {self.motor_id} 故障检测比值趋势', fontsize=12, fontweight='bold', pad=10)
             chart['ax'].set_xlabel('时间', fontsize=10)
-            chart['ax'].set_ylabel('故障检测比值 (%)', fontsize=10)
             chart['ax'].grid(True, alpha=0.3, linestyle='--')
             chart['ax'].text(0.5, 0.5, '暂无数据', transform=chart['ax'].transAxes, 
                            ha='center', va='center', fontsize=12, color='#999999')

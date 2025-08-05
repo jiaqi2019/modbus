@@ -345,7 +345,7 @@ class MainUI:
             
             # 创建分组页面
             group_frame = ttk.Frame(self.motor_notebook)
-            tab_title = f"电机 {start_motor}-{end_motor}"
+            tab_title = f"{start_motor}-{end_motor}号电机"
             self.motor_notebook.add(group_frame, text=tab_title)
             
             # 为这个分组中的每个电机创建显示

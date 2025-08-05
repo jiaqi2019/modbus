@@ -250,16 +250,12 @@ class WebSocketClientUI:
             if not motors:
                 return
                 
-            # 获取当前激活的tab
-            current_tab = self.motor_notebook.index(self.motor_notebook.select())
-            tab_text = self.motor_notebook.tab(current_tab, 'text')
+            # 获取当前激活的tab index
+            current_tab_index = self.motor_notebook.index(self.motor_notebook.select())
             
-            # 解析tab文本，获取电机ID范围
-            if not tab_text.startswith("电机 ") or "-" not in tab_text:
-                return
-                
-            start, end = tab_text.replace("电机 ", "").split("-")
-            start_id, end_id = int(start), int(end)
+            # 根据tab index计算电机ID范围（每个tab包含2台电机）
+            start_id = current_tab_index * 2 + 1
+            end_id = start_id + 1
             motor_ids = range(start_id, end_id + 1)
             
             # 只更新当前tab下的电机
@@ -443,7 +439,7 @@ class WebSocketClientUI:
             end_motor = start_motor + 1
             
             # 创建分组页面标题
-            group_tab_title = f"电机 {start_motor}-{end_motor}"
+            group_tab_title = f"{start_motor}-{end_motor}号发电机"
             
             # 检查分组页面是否已存在
             group_frame = None
@@ -505,28 +501,28 @@ class WebSocketClientUI:
     def on_tab_changed(self, event):
         """tab切换时刷新最近20条数据"""
         try:
-            current_tab = event.widget.index(event.widget.select())
-            tab_text = event.widget.tab(current_tab, 'text')
+            # 获取当前tab的index
+            current_tab_index = event.widget.index(event.widget.select())
             
-            if tab_text.startswith("电机 ") and "-" in tab_text:
-                start, end = tab_text.replace("电机 ", "").split("-")
-                start_id, end_id = int(start), int(end)
-                motor_ids = range(start_id, end_id + 1)
+            # 根据tab index计算电机ID范围（每个tab包含2台电机）
+            start_id = current_tab_index * 2 + 1
+            end_id = start_id + 1
+            motor_ids = range(start_id, end_id + 1)
+            
+            # 获取最近20条数据并刷新显示
+            for motor_id in motor_ids:
+                motor_data = self.data_processor.get_motor_data(motor_id)
+                if motor_data and motor_id in self.motor_displays:
+                    # 刷新数据显示
+                    self.motor_displays[motor_id].update_motor_values(motor_data)
                 
-                # 获取最近20条数据并刷新显示
-                for motor_id in motor_ids:
-                    motor_data = self.data_processor.get_motor_data(motor_id)
-                    if motor_data and motor_id in self.motor_displays:
-                        # 刷新数据显示
-                        self.motor_displays[motor_id].update_motor_values(motor_data)
-                    
-                    # 刷新图表显示
-                    if motor_id in self.motor_charts:
-                        history_data = self.data_processor.get_motor_history(motor_id, 20)
-                        if history_data:
-                            # 使用set_data_history方法刷新图表
-                            self.motor_charts[motor_id].set_data_history(history_data)
-                            
+                # 刷新图表显示
+                if motor_id in self.motor_charts:
+                    history_data = self.data_processor.get_motor_history(motor_id, 20)
+                    if history_data:
+                        # 使用set_data_history方法刷新图表
+                        self.motor_charts[motor_id].set_data_history(history_data)
+                        
         except Exception as e:
             logger.error(f"tab切换刷新数据失败: {str(e)}")
             import traceback
