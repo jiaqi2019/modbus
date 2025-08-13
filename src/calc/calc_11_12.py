@@ -1,32 +1,30 @@
 import math
 
-def calculate(genmon, xuanhao="#9"):
+def calculate(genmon, xuanhao="#11"):
     """
     计算发电机的励磁电流和比值
     参数:
         genmon: 发电机监测值列表 [Q, P, If, UA]
-        xuanhao: 发电机编号，可选 "#9" 或 "#10"
+        xuanhao: 发电机编号，可选 "#11" 或 "#12"
     返回:
         tuple: (计算得到的励磁电流, 励磁电流比值)
     """
     # 发电机参数
     n1 = {
-        14: 42,  # 极距
-        15: 0.0015,  # 定子绕组直流电阻
-        19: 18,  # 节距
-        5: 0.1575,  # 定子绕组漏抗（标么值）
+        14: 60,  # 极距
+        15: 0.00192,  # 定子绕组直流电阻
+        19: 25,  # 节距
+        5: 0.1195,  # 定子绕组漏抗（标么值）
         6: 0.6667,  # 转子每极嵌放绕组部分与极距之比
-        7: 50,  # 转子绕组匝数
-        8: 7  # 定子绕组每极每相匝数
+        7: 88,  # 转子绕组匝数
+        8: 10  # 定子绕组每极每相匝数
     }
 
     # 根据发电机编号调整参数
-    if xuanhao == "#9":
-        n1[7] = 50
-        xishu = 1.022
-    elif xuanhao == "#10":
-        n1[7] = 50
-        xishu = 1.0
+    if xuanhao == "#11":
+        n1[7] = 88
+    elif xuanhao == "#12":
+        n1[7] = 88
 
     # 提取监测值
     reactive_power = genmon[5]  # 无功功率
@@ -38,7 +36,7 @@ def calculate(genmon, xuanhao="#9"):
     if active_power == 0:
         active_power = 100
     if line_voltage == 0:
-        line_voltage = 22000
+        line_voltage = 19490
 
     # 计算参数
     polepitch = n1[14] / 2  # 极距
@@ -59,8 +57,8 @@ def calculate(genmon, xuanhao="#9"):
     mmfofarmaturetofieldcurrent = mmfofarmature * ka / n1[7]  # 电枢磁势对应的励磁电流
 
     # 计算阻抗和角度
-    impedance = math.sqrt(n1[15]**2 + (n1[5] * 22000 / 19245 / math.sqrt(3))**2)  # 阻抗
-    delta = math.atan2(n1[5] * 22000 / 19245 / math.sqrt(3), n1[15])  # 阻抗角
+    impedance = math.sqrt(n1[15]**2 + (n1[5] * 20000 / 10190 / math.sqrt(3))**2)  # 阻抗
+    delta = math.atan2(n1[5] * 20000 / 10190 / math.sqrt(3), n1[15])  # 阻抗角
     impedancevoltage = math.sqrt(3) * impedance * gen1  # 阻抗压降
 
     # 计算电动势
@@ -75,17 +73,16 @@ def calculate(genmon, xuanhao="#9"):
     alpha = delta1 + math.pi/2 + fnumq  # 角度alpha
 
     # 计算励磁电流
-    emfofarmature = emfofarmature / 22000
-    emffieldcurrent = 100 * (
-        0.2890834679456 * emfofarmature**6 - 
-        1.29353979475545 * emfofarmature**5 + 
-        2.3547326873505 * emfofarmature**4 - 
-        2.20513478437746 * emfofarmature**3 + 
-        1.11149253304413 * emfofarmature**2 - 
-        0.27498467972162 * emfofarmature + 
-        0.0283720708748
+    emfofarmature = emfofarmature / 100
+    emffieldcurrent = (
+        4.32638 * 10**-10 * emfofarmature**6 - 
+        4.09765104 * 10**-7 * emfofarmature**5 + 
+        1.547534903 * 10**-4 * emfofarmature**4 - 
+        2.8793655254652 * 10**-2 * emfofarmature**3 + 
+        2.6201859638555 * emfofarmature**2 - 
+        89.0634841496725 * emfofarmature - 
+        0.000089855825792
     )
-    emffieldcurrent = emffieldcurrent * 1786.34
 
     # 计算实际励磁电流
     actualfieldcurrent = math.sqrt(
@@ -96,8 +93,8 @@ def calculate(genmon, xuanhao="#9"):
 
     # 计算励磁电流比值
     if actualfieldcurrent > 0:
-        ratio = abs((excitation_current - xishu * actualfieldcurrent) / actualfieldcurrent)
+        ratio = (excitation_current - actualfieldcurrent) / actualfieldcurrent
     else:
-        ratio = 0
+        ratio = 0.001
 
     return actualfieldcurrent, ratio 

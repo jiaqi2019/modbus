@@ -1,11 +1,11 @@
 import math
 
-def calculate(genmon, xuanhao="#7"):
+def calculate(genmon, xuanhao="#9"):
     """
     计算发电机的励磁电流和比值
     参数:
         genmon: 发电机监测值列表 [Q, P, If, UA]
-        xuanhao: 发电机编号，可选 "#7" 或 "#8"
+        xuanhao: 发电机编号，可选 "#9" 或 "#10"
     返回:
         tuple: (计算得到的励磁电流, 励磁电流比值)
     """
@@ -14,17 +14,19 @@ def calculate(genmon, xuanhao="#7"):
         14: 42,  # 极距
         15: 0.0015,  # 定子绕组直流电阻
         19: 18,  # 节距
-        5: 0.23,  # 定子绕组漏抗（标么值）
+        5: 0.1575,  # 定子绕组漏抗（标么值）
         6: 0.6667,  # 转子每极嵌放绕组部分与极距之比
         7: 50,  # 转子绕组匝数
         8: 7  # 定子绕组每极每相匝数
     }
 
     # 根据发电机编号调整参数
-    if xuanhao == "#7":
+    if xuanhao == "#9":
         n1[7] = 50
-    elif xuanhao == "#8":
+        xishu = 1.022
+    elif xuanhao == "#10":
         n1[7] = 50
+        xishu = 1.0
 
     # 提取监测值
     reactive_power = genmon[5]  # 无功功率
@@ -57,8 +59,8 @@ def calculate(genmon, xuanhao="#7"):
     mmfofarmaturetofieldcurrent = mmfofarmature * ka / n1[7]  # 电枢磁势对应的励磁电流
 
     # 计算阻抗和角度
-    impedance = math.sqrt(n1[15]**2 + (n1[5] * 22000 / 17495 / math.sqrt(3))**2)  # 阻抗
-    delta = math.atan2(n1[5] * 22000 / 17495 / math.sqrt(3), n1[15])  # 阻抗角
+    impedance = math.sqrt(n1[15]**2 + (n1[5] * 22000 / 19245 / math.sqrt(3))**2)  # 阻抗
+    delta = math.atan2(n1[5] * 22000 / 19245 / math.sqrt(3), n1[15])  # 阻抗角
     impedancevoltage = math.sqrt(3) * impedance * gen1  # 阻抗压降
 
     # 计算电动势
@@ -83,7 +85,7 @@ def calculate(genmon, xuanhao="#7"):
         0.27498467972162 * emfofarmature + 
         0.0283720708748
     )
-    emffieldcurrent = emffieldcurrent * 1798.4
+    emffieldcurrent = emffieldcurrent * 1786.34
 
     # 计算实际励磁电流
     actualfieldcurrent = math.sqrt(
@@ -94,8 +96,8 @@ def calculate(genmon, xuanhao="#7"):
 
     # 计算励磁电流比值
     if actualfieldcurrent > 0:
-        ratio = abs((excitation_current - actualfieldcurrent) / actualfieldcurrent)
+        ratio = abs((excitation_current - xishu * actualfieldcurrent) / actualfieldcurrent)
     else:
-        ratio = 0
+        ratio = 0.001
 
     return actualfieldcurrent, ratio 

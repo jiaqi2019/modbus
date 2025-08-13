@@ -89,6 +89,6 @@ def calculate(genmon):
     if actualfieldcurrent > 0:
         ratio = abs((excitation_current - actualfieldcurrent) / actualfieldcurrent)
     else:
-        ratio = 0
+        ratio = 0.001
 
     return actualfieldcurrent, ratio 

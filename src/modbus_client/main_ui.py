@@ -17,6 +17,7 @@ from websocket_server.websocket_server import WebSocketServer
 # from db.database import DatabaseManager
 from ui.data_display import MotorDataDisplay
 from ui.chart_display import MotorChartDisplay
+from ui.bar_chart_display import MotorBarChart
 from ui.top_menu import TopMenu
 from ui.connection_status import ConnectionStatus
 from data_processor import DataProcessor
@@ -141,6 +142,7 @@ class MainUI:
         # 存储电机显示组件
         self.motor_displays = {}
         self.chart_displays = {}
+        self.bar_charts = {}
         
         # 创建电机分组页面（初始为空，连接后动态创建）
         self.motor_container = self.motor_notebook
@@ -358,18 +360,27 @@ class MainUI:
                 left_right_frame = ttk.Frame(motor_frame)
                 left_right_frame.pack(fill='both', expand=True, padx=5, pady=5)
 
-                # 左侧图表区域 - 80%
+                # 左侧图表区域 - 60%
                 chart_frame = ttk.Frame(left_right_frame)
                 chart_frame.pack(side='left', fill='both', expand=True, padx=(0, 5))
+
+                # 中间柱状图区域 - 20%
+                bar_frame = ttk.Frame(left_right_frame, width=300)
+                bar_frame.pack(side='left', fill='y', padx=5)
+                bar_frame.pack_propagate(False)  # 固定宽度
 
                 # 右侧数据区域 - 20%
                 data_frame = ttk.Frame(left_right_frame, width=300)
                 data_frame.pack(side='right', fill='y', padx=(5, 0))
                 data_frame.pack_propagate(False)  # 固定宽度
 
-                # 创建图表显示（左侧，占用80%空间）
+                # 创建图表显示（左侧，占用60%空间）
                 chart_display = MotorChartDisplay(chart_frame, motor_id)
                 self.chart_displays[motor_id] = chart_display
+
+                # 创建柱状图显示（中间，占用20%空间）
+                bar_chart = MotorBarChart(bar_frame, motor_id)
+                self.bar_charts[motor_id] = bar_chart
 
                 # 创建数据显示（右侧，占用20%空间，可滚动）
                 data_display = MotorDataDisplay(data_frame, motor_id)
@@ -503,6 +514,12 @@ class MainUI:
                     self.chart_displays[motor_id].add_chart_data_point(
                         motor_data.last_update, 
                         motor_data.excitation_current_ratio * 100
+                    )
+                
+                # 更新柱状图显示
+                if motor_id in self.bar_charts:
+                    self.bar_charts[motor_id].update_value(
+                        motor_data.average_excitation_current_ratio * 100
                     )
         except Exception as e:
             logger.error(f"更新电机显示失败: {str(e)}")
