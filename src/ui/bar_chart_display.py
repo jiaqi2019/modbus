@@ -88,7 +88,7 @@ class MotorBarChart:
         height = [self.current_value]
         
         # 根据数值设置颜色
-        color = '#1ABC9C' if self.current_value <= 5 else '#FF6B6B'
+        color = '#1ABC9C' if self.current_value <= 2.5 else '#FF0000'
         
         # 绘制柱状图
         chart['bar'] = chart['ax'].bar(x, height, width=0.5, color=color, alpha=0.8)

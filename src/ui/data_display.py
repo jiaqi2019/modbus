@@ -92,19 +92,36 @@ class MotorDataDisplay:
         data_container.pack(fill='x', expand=False)
 
         # 定义数据项 - 使用水平布局
-        data_items = [
-            ("A相电流", "phase_a_current", "A"),
-            ("B相电流", "phase_b_current", "A"),
-            ("C相电流", "phase_c_current", "A"),
-            ("频率", "frequency", "Hz"),
-            ("无功功率", "reactive_power", "MVar"),
-            ("有功功率", "active_power", "MW"),
-            ("线电压", "line_voltage", "kV"),
-            ("励磁电压", "excitation_voltage", "V"),
-            ("励磁电流", "excitation_current", "A"),
-            ("计算励磁电流", "calculated_excitation_current", "A"),
-            ("故障判断值", "excitation_current_ratio", "%")
-        ]
+        if self.motor_id in [11, 12]:
+            # 对于11、12号电机，交换励磁电压和励磁电流的位置
+            data_items = [
+                ("A相电流", "phase_a_current", "A"),
+                ("B相电流", "phase_b_current", "A"),
+                ("C相电流", "phase_c_current", "A"),
+                ("频率", "frequency", "Hz"),
+                ("无功功率", "reactive_power", "MVar"),
+                ("有功功率", "active_power", "MW"),
+                ("线电压", "line_voltage", "kV"),
+                ("励磁电压", "excitation_current", "V"),
+                ("励磁电流", "excitation_voltage", "A"),
+                ("计算励磁电流", "calculated_excitation_current", "A"),
+                ("故障判断值", "excitation_current_ratio", "%")
+            ]
+        else:
+            # 其他电机正常顺序
+            data_items = [
+                ("A相电流", "phase_a_current", "A"),
+                ("B相电流", "phase_b_current", "A"),
+                ("C相电流", "phase_c_current", "A"),
+                ("频率", "frequency", "Hz"),
+                ("无功功率", "reactive_power", "MVar"),
+                ("有功功率", "active_power", "MW"),
+                ("线电压", "line_voltage", "kV"),
+                ("励磁电压", "excitation_voltage", "V"),
+                ("励磁电流", "excitation_current", "A"),
+                ("计算励磁电流", "calculated_excitation_current", "A"),
+                ("故障判断值", "excitation_current_ratio", "%")
+            ]
 
         # 创建数据行 - 每行显示5个数据项
         for i in range(0, len(data_items), 5):
@@ -122,7 +139,7 @@ class MotorDataDisplay:
             avg_ratio_frame,
             text="均值:",
             font=('Microsoft YaHei', 16, 'bold'),
-            foreground='#1ABC9C',
+            foreground='#2E86AB',
             anchor='center',
             justify='center'
         )
@@ -131,7 +148,7 @@ class MotorDataDisplay:
             avg_ratio_frame,
             text="0.00%",
             font=('Microsoft YaHei', 22, 'bold'),
-            foreground='#1ABC9C',
+            foreground='#2E86AB',
             anchor='center',
             justify='center'
         )
@@ -232,10 +249,7 @@ class MotorDataDisplay:
         ratio_text = f"{ratio:.2f}%"
         dataitem_ratio_label = self.value_labels.get(f"motor{self.motor_id}_excitation_current_ratio")
         if dataitem_ratio_label:
-            if abs(ratio) > 5:
-                dataitem_ratio_label.config(text=ratio_text, foreground="red")
-            else:
-                dataitem_ratio_label.config(text=ratio_text, foreground="green")
+            dataitem_ratio_label.config(text=ratio_text)
         
         # 更新均值显示（使用配置的倍数）
         avg_ratio = getattr(motor_data, 'average_excitation_current_ratio', None)
@@ -247,3 +261,8 @@ class MotorDataDisplay:
         avg_label = self.value_labels.get(f"motor{self.motor_id}_average_excitation_current_ratio")
         if avg_label:
             avg_label.config(text=avg_ratio_text)
+            # 根据数值设置颜色：高于2.5%时用红色，否则用绿色
+            if abs(avg_ratio_value) > 2.5:
+                avg_label.config(foreground="red")
+            else:
+                avg_label.config(foreground="#1ABC9C")
